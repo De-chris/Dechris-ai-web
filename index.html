@@ -21,6 +21,31 @@
       background: linear-gradient(145deg, #000000, #1a1a1a);
       color: #fff;
     }
+    .light-mode .user {
+      background: #444 !important;
+      color: #fff;
+    }
+    #drawer {
+      position: fixed;
+      top: 50px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      z-index: 1000;
+    }
+    #drawer button {
+      background: #222;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
     #splash {
       position: fixed;
       top: 0; left: 0;
@@ -60,9 +85,10 @@
       max-width: 700px;
       margin: 0 auto;
     }
-    #modeBtn, #changeNameBtn {
+    #modeBtn {
       position: fixed;
       top: 10px;
+      right: 10px;
       padding: 0.4rem 0.6rem;
       font-size: 0.9rem;
       background: #444;
@@ -70,12 +96,6 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-    }
-    #modeBtn {
-      right: 10px;
-    }
-    #changeNameBtn {
-      right: 100px;
     }
     #chatBox {
       margin-top: 4rem;
@@ -90,21 +110,17 @@
       word-wrap: break-word;
     }
     .user {
-      background: #333;
+      background: rgba(0, 123, 255, 0.2);
       align-self: flex-end;
-      color: #fff;
+      color: #000;
     }
-    .dark-mode .user {
-      color: #fff;
-    }
+    .dark-mode .user { color: #fff; }
     .ai {
       background: transparent !important;
       align-self: flex-start;
       color: #000;
     }
-    .dark-mode .ai {
-      color: #fff;
-    }
+    .dark-mode .ai { color: #fff; }
     #inputBox {
       display: flex;
       gap: 0.5rem;
@@ -124,9 +140,7 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -135,8 +149,14 @@
     <div>Dechris AI</div>
     <small>Dechris AI Web</small>
   </div>
-  <button id="modeBtn">Dark Mode</button>
-  <button id="changeNameBtn">Change Name</button>
+
+  <div id="drawer">
+    <button onclick="toggleDarkMode()">🌗 Toggle Mode</button>
+    <button onclick="changeName()">👤 Change Name</button>
+    <button onclick="clearChats()">🗑️ Clear Chats</button>
+    <button onclick="toggleVoice()">🔊 Voice: <span id="voiceStatus">ON</span></button>
+    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank" style="color:white;text-decoration:underline">📲 Get Mobile App</a>
+  </div>
 
   <div class="main hidden">
     <div id="chatBox"></div>
@@ -148,18 +168,14 @@
   </div>
 
   <script>
-    let username = localStorage.getItem("dechris_username");
-    if (!username) {
-      username = prompt("What's your name?");
-      if (!username || username.trim() === "") username = "User";
-      localStorage.setItem("dechris_username", username);
-    }
+    let voiceEnabled = true;
+    let username = localStorage.getItem("dechris_username") || prompt("What's your name?") || "User";
+    localStorage.setItem("dechris_username", username);
 
     const splash = document.getElementById("splash");
     const main = document.querySelector(".main");
-    const modeBtn = document.getElementById("modeBtn");
-    const changeNameBtn = document.getElementById("changeNameBtn");
     const chatBox = document.getElementById("chatBox");
+    const voiceStatus = document.getElementById("voiceStatus");
 
     setTimeout(() => {
       splash.style.display = "none";
@@ -167,18 +183,26 @@
       loadChatDisplay();
     }, 3000);
 
-    modeBtn.addEventListener("click", () => {
+    function toggleDarkMode() {
       document.body.classList.toggle("dark-mode");
-      modeBtn.textContent = document.body.classList.contains("dark-mode") ? "Light Mode" : "Dark Mode";
-    });
+    }
 
-    changeNameBtn.addEventListener("click", () => {
-      const newName = prompt("Enter your new name:", username);
-      if (newName && newName.trim() !== "") {
-        username = newName.trim();
-        localStorage.setItem("dechris_username", username);
-      }
-    });
+    function changeName() {
+      const newName = prompt("Enter new name:") || "User";
+      username = newName;
+      localStorage.setItem("dechris_username", newName);
+    }
+
+    function clearChats() {
+      localStorage.removeItem("dechris_chat_display");
+      localStorage.removeItem("dechris_chat_memory");
+      chatBox.innerHTML = "";
+    }
+
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      voiceStatus.textContent = voiceEnabled ? "ON" : "OFF";
+    }
 
     function displayMsg(msg, sender) {
       const bubble = document.createElement("div");
@@ -219,8 +243,8 @@
       let prompt = "System: You are Dechris AI created by the Havenova-x team lead by their founder Dechris, a helpful, calm and intelligent assistant. ";
       prompt += "Keep responses clean, avoid emojis, and never repeat characters or symbols. ";
       prompt += "If any user asks to contact Havenova-x, give them the email havenova.x@gmail.com. ";
+      prompt += "Tell users you are also available as a mobile app here: https://dechris-ai.en.uptodown.com/android ";
       prompt += "You are currently chatting with " + username + ".\n";
-      prompt += "Let users know you also have a mobile version at https://dechris-ai.en.uptodown.com/android\n";
 
       const mem = getMemory();
       for (let msg of mem) {
@@ -235,14 +259,10 @@
       fetch(url)
         .then(r => r.json())
         .then(data => {
-          let reply = "⚠️ Failed to reply.";
-          if (data.response) reply = data.response;
-          else if (data.error) reply = "⚠️ " + data.error;
-          else reply = "⚠️ Empty reply.";
-
+          let reply = data.response || data.error || "⚠️ Empty reply.";
           reply = reply.replace(/[😀-🙏]/gu, '');
           displayMsg(reply, 'ai');
-          speak(reply);
+          if (voiceEnabled) speak(reply);
           saveToMemory("assistant", reply);
         })
         .catch(_ => {
@@ -251,7 +271,7 @@
     }
 
     function speak(text) {
-      if ('speechSynthesis' in window) {
+      if ('speechSynthesis' in window && voiceEnabled) {
         const u = new SpeechSynthesisUtterance(text);
         window.speechSynthesis.speak(u);
       }
