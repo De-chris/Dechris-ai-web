@@ -13,13 +13,13 @@
       font-family: 'Poppins', sans-serif;
     }
     body {
+      background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
+      color: #000;
       transition: background 0.3s, color 0.3s;
-      background: #ffffff;
-      color: #000000;
     }
     .dark-mode {
-      background: #121212;
-      color: #ffffff;
+      background: linear-gradient(145deg, #000000, #1a1a1a);
+      color: #fff;
     }
     #splash {
       position: fixed;
@@ -28,45 +28,113 @@
       background: #000;
       color: #fff;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       font-size: 2em;
       animation: fadeZoom 3s ease-out forwards;
       z-index: 999;
     }
+    #splash img {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 1rem;
+      animation: pulse 2s infinite ease-in-out;
+    }
+    #splash small {
+      font-size: 0.4em;
+      color: #bbb;
+    }
     @keyframes fadeZoom {
-      0% {transform: scale(1); opacity: 1;}
-      25% {transform: scale(1.3);}
-      50% {transform: scale(0.8); opacity: 0.8;}
-      100% {transform: scale(1.1); opacity: 0;}
+      0% { transform: scale(1); opacity: 1; }
+      25% { transform: scale(1.3); }
+      50% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(1.1); opacity: 0; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(1.1); opacity: 0.9; }
     }
     .main {
       padding: 1rem;
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto;
     }
-    #modeBtn {
+    #modeBtn, #drawerBtn {
       position: fixed;
       top: 10px;
-      right: 10px;
       padding: 0.4rem 0.6rem;
       font-size: 0.9rem;
-      background: #ddd;
       border: none;
       border-radius: 6px;
+      cursor: pointer;
+      z-index: 998;
+    }
+    #modeBtn {
+      right: 10px;
+      background: #444;
+      color: #fff;
+    }
+    #drawerBtn {
+      left: 10px;
+      background: #888;
+      color: #fff;
+    }
+    #drawer {
+      position: fixed;
+      top: 0;
+      left: -260px;
+      width: 250px;
+      height: 100%;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 1rem;
+      transition: left 0.3s ease;
+      z-index: 997;
+    }
+    #drawer.open {
+      left: 0;
+    }
+    #drawer h3 { margin-bottom: 1rem; }
+    #drawer button {
+      display: block;
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
     }
     #chatBox {
       margin-top: 4rem;
+      display: flex;
+      flex-direction: column;
     }
     .chat-msg {
       padding: 0.8rem;
       border-radius: 12px;
       margin: 0.5rem 0;
       max-width: 80%;
+      word-wrap: break-word;
     }
-    .user { background: #cfe9ff; align-self: flex-end; }
-    .ai { background: #f1f1f1; align-self: flex-start; }
+    .user {
+      background: rgba(0, 123, 255, 0.2);
+      align-self: flex-end;
+      color: #000;
+    }
+    .dark-mode .user {
+      color: #fff;
+    }
+    .ai {
+      background: transparent !important;
+      align-self: flex-start;
+      color: #000;
+    }
+    .dark-mode .ai {
+      color: #fff;
+    }
     #inputBox {
       display: flex;
       gap: 0.5rem;
@@ -84,16 +152,30 @@
       background: #007bff;
       color: white;
       border-radius: 6px;
+      cursor: pointer;
     }
     .hidden { display: none; }
   </style>
 </head>
 <body>
-  <div id="splash">Dechris AI</div>
+  <div id="splash">
+    <img src="logo.png" alt="Dechris AI Logo">
+    <div>Dechris AI</div>
+    <small>Dechris AI Web</small>
+  </div>
+
+  <button id="drawerBtn">☰</button>
   <button id="modeBtn">Dark Mode</button>
 
+  <div id="drawer">
+    <h3>Settings</h3>
+    <button onclick="changeUsername()">Change Name</button>
+    <button onclick="window.open('https://example.com/dechris.apk')">Download Mobile App</button>
+    <button onclick="localStorage.clear();location.reload();">Reset All</button>
+  </div>
+
   <div class="main hidden">
-    <div id="chatBox" style="display: flex; flex-direction: column;"></div>
+    <div id="chatBox"></div>
     <div id="inputBox">
       <input type="text" id="userInput" placeholder="Ask something...">
       <button onclick="sendMessage()">Send</button>
@@ -102,50 +184,35 @@
   </div>
 
   <script>
+    let username = localStorage.getItem("dechris_username");
+    if (!username) {
+      username = prompt("What's your name?") || "User";
+      localStorage.setItem("dechris_username", username);
+    }
+
+    function changeUsername() {
+      const newName = prompt("Enter new name:") || username;
+      localStorage.setItem("dechris_username", newName);
+      location.reload();
+    }
+
     const splash = document.getElementById("splash");
     const main = document.querySelector(".main");
-    const modeBtn = document.getElementById("modeBtn");
     const chatBox = document.getElementById("chatBox");
+    const drawer = document.getElementById("drawer");
+    const drawerBtn = document.getElementById("drawerBtn");
+    drawerBtn.onclick = () => drawer.classList.toggle("open");
 
     setTimeout(() => {
       splash.style.display = "none";
       main.classList.remove("hidden");
+      loadChatDisplay();
     }, 3000);
 
-    modeBtn.addEventListener("click", () => {
+    document.getElementById("modeBtn").onclick = () => {
       document.body.classList.toggle("dark-mode");
       modeBtn.textContent = document.body.classList.contains("dark-mode") ? "Light Mode" : "Dark Mode";
-    });
-
-    const API_KEY = "cbbf5a863d9678e96c61e9a254c8fd98f6deaa7613382f7b82bbc8000fea2e7a"; // <-- PASTE YOUR Together AI API key here
-
-    function sendMessage() {
-      const input = document.getElementById("userInput");
-      const text = input.value.trim();
-      if (!text) return;
-      displayMsg(text, 'user');
-      input.value = "";
-      fetch("https://api.together.xyz/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "mistralai/Mixtral-8x7B-Instruct-v0.1",
-          messages: [{role: "user", content: text}]
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const msg = data.choices[0].message.content;
-        const cleaned = msg.replace(/([\uD800-\uDBFF][\uDC00-\uDFFF])/g, (m, emoji, i, full) => {
-          return full.indexOf(emoji) <= full.indexOf(emoji) + 1 ? emoji : "";
-        });
-        displayMsg(cleaned, 'ai');
-        speak(cleaned);
-      });
-    }
+    };
 
     function displayMsg(msg, sender) {
       const bubble = document.createElement("div");
@@ -153,12 +220,67 @@
       bubble.textContent = msg;
       chatBox.appendChild(bubble);
       chatBox.scrollTop = chatBox.scrollHeight;
+      saveChatDisplay();
+    }
+
+    function saveChatDisplay() {
+      localStorage.setItem("dechris_chat_display", chatBox.innerHTML);
+    }
+
+    function loadChatDisplay() {
+      const html = localStorage.getItem("dechris_chat_display");
+      if (html) chatBox.innerHTML = html;
+    }
+
+    function saveToMemory(role, content) {
+      const mem = JSON.parse(localStorage.getItem("dechris_chat_memory") || "[]");
+      mem.push({ role, content });
+      localStorage.setItem("dechris_chat_memory", JSON.stringify(mem));
+    }
+
+    function getMemory() {
+      return JSON.parse(localStorage.getItem("dechris_chat_memory") || "[]");
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("userInput");
+      const text = input.value.trim();
+      if (!text) return;
+      displayMsg(text, 'user');
+      saveToMemory("user", text);
+      input.value = "";
+
+      let prompt = "System: You are Dechris AI created by the Havenova-x team lead by their founder Dechris, a helpful, calm and intelligent assistant. ";
+      prompt += "Keep responses clean, avoid emojis, and never repeat characters or symbols. ";
+      prompt += "If any user asks to contact Havenova-x, give them the email havenova.x@gmail.com. ";
+      prompt += "You are currently chatting with " + username + ".\n";
+
+      const mem = getMemory();
+      for (let msg of mem) {
+        let c = msg.content.trim();
+        if (c.length > 250) c = c.substring(0,250) + "...";
+        prompt += (msg.role === "user" ? username + ": " : "Assistant: ") + c + "\n";
+      }
+      prompt += "Assistant:";
+
+      const url = "https://www.kazeai.site/api/v1?text=" + encodeURIComponent(prompt);
+
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          let reply = data.response || data.error || "⚠️ Empty reply.";
+          reply = reply.replace(/[😀-🙏]/gu, '');
+          displayMsg(reply, 'ai');
+          speak(reply);
+          saveToMemory("assistant", reply);
+        })
+        .catch(_ => displayMsg("⚠️ Request failed.", "ai"));
     }
 
     function speak(text) {
       if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        window.speechSynthesis.speak(utterance);
+        const u = new SpeechSynthesisUtterance(text);
+        window.speechSynthesis.speak(u);
       }
     }
 
@@ -171,21 +293,9 @@
       rec.lang = "en-US";
       rec.start();
       rec.onresult = e => {
-        const voiceText = e.results[0][0].transcript;
-        document.getElementById("userInput").value = voiceText;
+        document.getElementById("userInput").value = e.results[0][0].transcript;
         sendMessage();
       };
-    }
-
-    // Mobile detection
-    if (/android/i.test(navigator.userAgent)) {
-      document.body.innerHTML = `
-        <div style="padding: 2rem; text-align: center;">
-          <h2>Dechris AI Web is not available on Android</h2>
-          <p>Please download the app instead:</p>
-          <a href="https://dechris-ai.en.uptodown.com/android" style="padding: 1rem; background: #007bff; color: white; border-radius: 8px; text-decoration: none;">Download App</a>
-        </div>
-      `;
     }
   </script>
 </body>
