@@ -13,13 +13,23 @@
       font-family: 'Poppins', sans-serif;
     }
     body {
-      background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
+      background: #fff;
       color: #000;
       transition: background 0.3s, color 0.3s;
     }
     .dark-mode {
       background: linear-gradient(145deg, #000000, #1a1a1a);
       color: #fff;
+    }
+    #header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1rem;
+    }
+    #header img {
+      width: 32px;
+      height: 32px;
     }
     #splash {
       position: fixed;
@@ -122,9 +132,6 @@
     .user {
       background: rgba(0, 123, 255, 0.2);
       align-self: flex-end;
-      color: #000;
-    }
-    .dark-mode .user {
       color: #fff;
     }
     .ai {
@@ -164,6 +171,11 @@
     <small>Dechris AI Web</small>
   </div>
 
+  <div id="header">
+    <img src="logo.png" alt="Logo" />
+    <span><strong>Dechris AI</strong></span>
+  </div>
+
   <button id="drawerBtn">☰</button>
   <button id="modeBtn">Dark Mode</button>
 
@@ -171,6 +183,7 @@
     <h3>Settings</h3>
     <button onclick="changeUsername()">Change Name</button>
     <button onclick="window.open('https://example.com/dechris.apk')">Download Mobile App</button>
+    <button onclick="toggleSpeak()">Toggle Auto Speak</button>
     <button onclick="localStorage.clear();location.reload();">Reset All</button>
   </div>
 
@@ -188,6 +201,14 @@
     if (!username) {
       username = prompt("What's your name?") || "User";
       localStorage.setItem("dechris_username", username);
+    }
+
+    let autoSpeak = localStorage.getItem("dechris_auto_speak") !== "false";
+
+    function toggleSpeak() {
+      autoSpeak = !autoSpeak;
+      localStorage.setItem("dechris_auto_speak", autoSpeak);
+      alert("Auto Speak is now " + (autoSpeak ? "ON" : "OFF"));
     }
 
     function changeUsername() {
@@ -271,7 +292,7 @@
           let reply = data.response || data.error || "⚠️ Empty reply.";
           reply = reply.replace(/[😀-🙏]/gu, '');
           displayMsg(reply, 'ai');
-          speak(reply);
+          if (autoSpeak) speak(reply);
           saveToMemory("assistant", reply);
         })
         .catch(_ => displayMsg("⚠️ Request failed.", "ai"));
