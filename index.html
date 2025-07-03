@@ -6,6 +6,7 @@
   <title>Dechris AI</title>
   <link rel="icon" href="logo.png" type="image/png">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -27,18 +28,20 @@
       color: #333333;
     }
     .light-mode .user {
-      background: #f0f0f0 !important;
-      color: #333333;
+      background: #2d2d2d !important;
+      color: #ffffff;
     }
     .dark-mode .user {
-      background: #2d2d2d !important;
-      color: #f0f0f0;
+      background: #ffffff !important;
+      color: #1a1a1a;
     }
     .light-mode .ai {
-      color: #333333;
+      color: #000000;
+      background: transparent !important;
     }
     .dark-mode .ai {
-      color: #f0f0f0;
+      color: #ffffff;
+      background: transparent !important;
     }
     #drawer {
       position: fixed;
@@ -155,24 +158,24 @@
     }
     .chat-msg {
       padding: 1rem;
-      border-radius: 12px;
+      border-radius: 18px;
       max-width: 85%;
       word-wrap: break-word;
       line-height: 1.5;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .user {
-      background: rgba(0, 123, 255, 0.1);
+      background: #2d2d2d;
       align-self: flex-end;
       border-bottom-right-radius: 4px;
+      color: #ffffff;
+    }
+    .dark-mode .user {
+      background: #ffffff;
+      color: #1a1a1a;
     }
     .ai {
-      background: rgba(0, 0, 0, 0.05);
       align-self: flex-start;
       border-bottom-left-radius: 4px;
-    }
-    .dark-mode .ai {
-      background: rgba(255, 255, 255, 0.05);
     }
     #inputBox {
       display: flex;
@@ -180,49 +183,48 @@
       margin-top: 1.5rem;
       position: sticky;
       bottom: 1rem;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 0.8rem;
-      border-radius: 12px;
+      background: #ffffff;
+      padding: 0.5rem;
+      border-radius: 24px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     .dark-mode #inputBox {
-      background: rgba(30, 30, 30, 0.9);
+      background: #2d2d2d;
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
     #inputBox input {
       flex: 1;
-      padding: 0.8rem;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      background: #fff;
+      padding: 0.8rem 1rem;
+      border-radius: 18px;
+      border: none;
+      background: #f0f0f0;
       color: #333;
+      outline: none;
     }
     .dark-mode #inputBox input {
-      background: #2d2d2d;
-      border-color: #444;
+      background: #1a1a1a;
       color: #f0f0f0;
     }
     #inputBox button {
-      padding: 0 1.2rem;
+      padding: 0;
       border: none;
-      background: #007bff;
+      background: #2d2d2d;
       color: white;
-      border-radius: 8px;
+      border-radius: 50%;
       cursor: pointer;
       transition: background 0.2s;
-    }
-    #inputBox button:hover {
-      background: #0069d9;
-    }
-    #inputBox button.voice-btn {
-      background: #28a745;
-      min-width: 40px;
+      width: 44px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    #inputBox button.voice-btn:hover {
-      background: #218838;
+    .dark-mode #inputBox button {
+      background: #ffffff;
+      color: #1a1a1a;
+    }
+    #inputBox button:hover {
+      opacity: 0.9;
     }
     .hidden { display: none; }
     .app-promo {
@@ -231,6 +233,7 @@
       padding: 1rem;
       margin: 1rem 0;
       text-align: center;
+      position: relative;
     }
     .dark-mode .app-promo {
       background: rgba(0, 123, 255, 0.2);
@@ -242,6 +245,19 @@
     }
     .dark-mode .app-promo a {
       color: #4da6ff;
+    }
+    .close-promo {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .dark-mode .close-promo {
+      color: #aaa;
     }
     @media (max-width: 600px) {
       .main {
@@ -270,23 +286,24 @@
     <button onclick="changeName()">👤 Change Your Name</button>
     <button onclick="exportChat()">📤 Export Chat</button>
     <button onclick="clearChats()">🗑️ Clear All Chats</button>
-    <button onclick="toggleVoice()">🔊 Toggle Voice: <span id="voiceStatus">ON</span></button>
     <hr>
     <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">📲 Download Mobile App</a>
     <a href="mailto:havenova.x@gmail.com" target="_blank">✉️ Contact Havenova-x</a>
     <hr>
-    <small style="color:#aaa;font-size:0.8rem;text-align:center">Dechris AI v1.1</small>
+    <small style="color:#aaa;font-size:0.8rem;text-align:center">Dechris AI Web</small>
   </div>
 
   <div class="main hidden">
     <div id="chatBox"></div>
-    <div class="app-promo">
+    <div class="app-promo hidden" id="appPromo">
+      <button class="close-promo" onclick="closePromo()">×</button>
       Enjoying Dechris AI? Get the full experience with our <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">mobile app</a>!
     </div>
     <div id="inputBox">
-      <input type="text" id="userInput" placeholder="Ask something..." onkeypress="handleKeyPress(event)">
-      <button onclick="startVoiceInput()" class="voice-btn">🎙</button>
-      <button onclick="sendMessage()">Send</button>
+      <input type="text" id="userInput" placeholder="Ask something..." onkeydown="handleKeyPress(event)">
+      <button onclick="sendMessage()" title="Send message">
+        <span class="material-icons" style="font-size:1.2rem">send</span>
+      </button>
     </div>
   </div>
 
@@ -298,10 +315,10 @@
     const splash = document.getElementById("splash");
     const main = document.querySelector(".main");
     const chatBox = document.getElementById("chatBox");
-    const voiceStatus = document.getElementById("voiceStatus");
     const drawer = document.getElementById("drawer");
     const drawerToggle = document.getElementById("drawerToggle");
     const userInput = document.getElementById("userInput");
+    const appPromo = document.getElementById("appPromo");
 
     // Initialize app
     setTimeout(() => {
@@ -309,6 +326,7 @@
       main.classList.remove("hidden");
       loadChatDisplay();
       startDrawerTimer();
+      showPromoIfNeeded();
     }, 3000);
 
     // Set initial dark mode if preferred
@@ -317,9 +335,17 @@
     }
 
     // Drawer toggle functionality
-    drawerToggle.addEventListener("click", () => {
+    drawerToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
       drawer.classList.toggle("open");
       resetDrawerTimer();
+    });
+
+    // Close drawer when clicking outside
+    document.addEventListener("click", (e) => {
+      if (drawer.classList.contains("open") && !drawer.contains(e.target) {
+        closeDrawer();
+      }
     });
 
     function startDrawerTimer() {
@@ -340,6 +366,21 @@
         resetDrawerTimer();
       }
     });
+
+    function showPromoIfNeeded() {
+      const lastShowTime = localStorage.getItem("dechris_promo_last_shown");
+      const now = new Date().getTime();
+      const oneWeek = 7 * 24 * 60 * 60 * 1000;
+      
+      if (!lastShowTime || (now - lastShowTime > oneWeek)) {
+        appPromo.classList.remove("hidden");
+        localStorage.setItem("dechris_promo_last_shown", now);
+      }
+    }
+
+    function closePromo() {
+      appPromo.classList.add("hidden");
+    }
 
     function toggleDarkMode() {
       document.body.classList.toggle("dark-mode");
@@ -394,15 +435,6 @@
       closeDrawer();
     }
 
-    function toggleVoice() {
-      voiceEnabled = !voiceEnabled;
-      voiceStatus.textContent = voiceEnabled ? "ON" : "OFF";
-      if (!voiceEnabled && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      closeDrawer();
-    }
-
     function displayMsg(msg, sender) {
       const bubble = document.createElement("div");
       bubble.className = `chat-msg ${sender}`;
@@ -410,11 +442,6 @@
       chatBox.appendChild(bubble);
       chatBox.scrollTop = chatBox.scrollHeight;
       saveChatDisplay();
-      
-      // Auto-close drawer if it's open when receiving AI message
-      if (sender === 'ai' && drawer.classList.contains('open')) {
-        closeDrawer();
-      }
     }
 
     function saveChatDisplay() {
@@ -425,7 +452,7 @@
       const html = localStorage.getItem("dechris_chat_display");
       if (html) {
         chatBox.innerHTML = html;
-        // Add mobile app promo if chat is empty
+        // Add welcome message if chat is empty
         if (chatBox.children.length === 0) {
           displayMsg(`Hello ${username}! I'm Dechris AI, your intelligent assistant. You can ask me anything. Also, did you know we have a mobile app? Get it here: https://dechris-ai.en.uptodown.com/android`, 'ai');
         }
@@ -445,9 +472,11 @@
     }
 
     function handleKeyPress(e) {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
         sendMessage();
       }
+      // Shift+Enter will allow new lines as normal
     }
 
     function sendMessage() {
@@ -481,54 +510,11 @@
           let reply = data.response || data.error || "I couldn't generate a response. Please try again.";
           reply = reply.replace(/[😀-🙏]/gu, '');
           displayMsg(reply, 'ai');
-          if (voiceEnabled) speak(reply);
           saveToMemory("assistant", reply);
         })
         .catch(_ => {
           displayMsg("Sorry, I'm having trouble connecting. Please check your internet connection and try again.", "ai");
         });
-    }
-
-    function speak(text) {
-      if ('speechSynthesis' in window && voiceEnabled) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.rate = 1.0;
-        u.pitch = 1.0;
-        window.speechSynthesis.speak(u);
-      }
-    }
-
-    function startVoiceInput() {
-      if (!('webkitSpeechRecognition' in window)) {
-        alert("Voice input is not supported in your browser");
-        return;
-      }
-      
-      const rec = new webkitSpeechRecognition();
-      rec.lang = "en-US";
-      rec.interimResults = false;
-      rec.maxAlternatives = 1;
-      
-      rec.onstart = () => {
-        userInput.placeholder = "Listening...";
-      };
-      
-      rec.onerror = (event) => {
-        userInput.placeholder = "Ask something...";
-        console.error("Voice recognition error", event.error);
-      };
-      
-      rec.onend = () => {
-        userInput.placeholder = "Ask something...";
-      };
-      
-      rec.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        userInput.value = transcript;
-        sendMessage();
-      };
-      
-      rec.start();
     }
 
     // Android redirect
