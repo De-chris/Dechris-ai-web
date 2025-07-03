@@ -32,6 +32,9 @@
     .light-mode .ai {
       color: #000;
     }
+    .dark-mode .user {
+      background: #333 !important;
+    }
     #drawer {
       position: fixed;
       top: 50px;
@@ -42,16 +45,25 @@
       border-radius: 8px;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.8rem;
       z-index: 1000;
+      width: 200px;
     }
-    #drawer button {
+    #drawer button, #drawer a {
       background: #222;
       color: #fff;
       border: none;
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
       border-radius: 5px;
       cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+    #drawer button:hover, #drawer a:hover {
+      background: #333;
     }
     #splash {
       position: fixed;
@@ -108,36 +120,45 @@
       margin-top: 4rem;
       display: flex;
       flex-direction: column;
+      gap: 0.8rem;
     }
     .chat-msg {
-      padding: 0.8rem;
+      padding: 0.8rem 1rem;
       border-radius: 12px;
-      margin: 0.5rem 0;
+      margin: 0.2rem 0;
       max-width: 80%;
       word-wrap: break-word;
+      line-height: 1.5;
     }
     .user {
       background: rgba(0, 123, 255, 0.2);
       align-self: flex-end;
       color: #000;
     }
-    .dark-mode .user { color: #fff; }
+    .dark-mode .user { 
+      color: #fff;
+      background: #333 !important;
+    }
     .ai {
       background: transparent !important;
       align-self: flex-start;
       color: #000;
     }
-    .dark-mode .ai { color: #fff; }
+    .dark-mode .ai { 
+      color: #fff;
+    }
     #inputBox {
       display: flex;
       gap: 0.5rem;
-      margin-top: 1rem;
+      margin-top: 1.5rem;
+      padding: 0.5rem 0;
     }
-    #inputBox input {
+    #userInput {
       flex: 1;
-      padding: 0.7rem;
+      padding: 0.7rem 1rem;
       border-radius: 6px;
       border: 1px solid #ccc;
+      font-size: 1rem;
     }
     #inputBox button {
       padding: 0.7rem 1rem;
@@ -146,8 +167,50 @@
       color: white;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 1rem;
+    }
+    #inputBox button:last-child {
+      padding: 0.7rem;
+      min-width: 40px;
     }
     .hidden { display: none; }
+    .typing-indicator {
+      display: inline-block;
+      margin-left: 5px;
+    }
+    .typing-indicator span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background-color: #888;
+      border-radius: 50%;
+      margin-right: 3px;
+      animation: typing 1s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes typing {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .app-banner {
+      background: #007bff;
+      color: white;
+      padding: 0.8rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      text-align: center;
+      display: none;
+    }
+    .app-banner a {
+      color: white;
+      text-decoration: underline;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -158,17 +221,21 @@
   </div>
 
   <div id="drawer">
-    <button onclick="toggleDarkMode()">🌗 Toggle Mode</button>
+    <button onclick="toggleDarkMode()">🌗 Toggle Dark Mode</button>
     <button onclick="changeName()">👤 Change Name</button>
-    <button onclick="clearChats()">🗑️ Clear Chats</button>
-    <button onclick="toggleVoice()">🔊 Voice: <span id="voiceStatus">ON</span></button>
-    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank" style="color:white;text-decoration:underline">📲 Get Mobile App</a>
+    <button onclick="clearChats()">🗑️ Clear Chat History</button>
+    <button onclick="toggleVoice()">🔊 <span id="voiceStatus">Voice: ON</span></button>
+    <button onclick="exportChat()">📤 Export Chat</button>
+    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">📲 Get Mobile App</a>
   </div>
 
   <div class="main hidden">
+    <div class="app-banner" id="mobileBanner">
+      Enjoy Dechris AI on the go! <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">Download our mobile app</a>
+    </div>
     <div id="chatBox"></div>
     <div id="inputBox">
-      <input type="text" id="userInput" placeholder="Ask something...">
+      <input type="text" id="userInput" placeholder="Ask something..." autocomplete="off">
       <button onclick="sendMessage()">Send</button>
       <button onclick="startVoiceInput()">🎙</button>
     </div>
@@ -178,16 +245,37 @@
     let voiceEnabled = true;
     let username = localStorage.getItem("dechris_username") || prompt("What's your name?") || "User";
     localStorage.setItem("dechris_username", username);
+    let isTyping = false;
 
     const splash = document.getElementById("splash");
     const main = document.querySelector(".main");
     const chatBox = document.getElementById("chatBox");
     const voiceStatus = document.getElementById("voiceStatus");
+    const mobileBanner = document.getElementById("mobileBanner");
+
+    // Show mobile banner only once per session
+    if (!sessionStorage.getItem('bannerShown')) {
+      mobileBanner.style.display = 'block';
+      sessionStorage.setItem('bannerShown', 'true');
+      setTimeout(() => {
+        mobileBanner.style.display = 'none';
+      }, 10000);
+    }
 
     setTimeout(() => {
       splash.style.display = "none";
       main.classList.remove("hidden");
       loadChatDisplay();
+      
+      // Initial greeting
+      if (chatBox.children.length === 0) {
+        showTypingIndicator();
+        setTimeout(() => {
+          removeTypingIndicator();
+          const greeting = `Hello ${username}! I'm Dechris AI, your intelligent assistant. How can I help you today?\n\nBy the way, did you know I'm also available as a mobile app? You can download it here: https://dechris-ai.en.uptodown.com/android`;
+          displayMsg(greeting, 'ai');
+        }, 1500);
+      }
     }, 3000);
 
     function toggleDarkMode() {
@@ -196,23 +284,67 @@
     }
 
     function changeName() {
-      const newName = prompt("Enter new name:") || "User";
-      username = newName;
-      localStorage.setItem("dechris_username", newName);
+      const newName = prompt("Enter new name:", username) || "User";
+      if (newName !== username) {
+        username = newName;
+        localStorage.setItem("dechris_username", newName);
+        displayMsg(`Name changed to ${newName}`, 'ai');
+      }
     }
 
     function clearChats() {
-      localStorage.removeItem("dechris_chat_display");
-      localStorage.removeItem("dechris_chat_memory");
-      chatBox.innerHTML = "";
+      if (confirm("Are you sure you want to clear all chat history?")) {
+        localStorage.removeItem("dechris_chat_display");
+        localStorage.removeItem("dechris_chat_memory");
+        chatBox.innerHTML = "";
+        displayMsg("Chat history has been cleared.", 'ai');
+      }
     }
 
     function toggleVoice() {
       voiceEnabled = !voiceEnabled;
-      voiceStatus.textContent = voiceEnabled ? "ON" : "OFF";
+      voiceStatus.textContent = `Voice: ${voiceEnabled ? "ON" : "OFF"}`;
+      displayMsg(`Voice feedback ${voiceEnabled ? "enabled" : "disabled"}`, 'ai');
+    }
+
+    function exportChat() {
+      let chatText = '';
+      const messages = chatBox.querySelectorAll('.chat-msg');
+      messages.forEach(msg => {
+        const sender = msg.classList.contains('user') ? username : 'Dechris AI';
+        chatText += `${sender}: ${msg.textContent}\n\n`;
+      });
+      
+      const blob = new Blob([chatText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DechrisAI_Chat_${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function showTypingIndicator() {
+      if (isTyping) return;
+      isTyping = true;
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'chat-msg ai';
+      typingDiv.id = 'typingIndicator';
+      typingDiv.innerHTML = 'Thinking<span class="typing-indicator"><span></span><span></span><span></span></span>';
+      chatBox.appendChild(typingDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      isTyping = false;
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
     }
 
     function displayMsg(msg, sender) {
+      removeTypingIndicator();
       const bubble = document.createElement("div");
       bubble.className = `chat-msg ${sender}`;
       bubble.textContent = msg;
@@ -244,14 +376,17 @@
       const input = document.getElementById("userInput");
       const text = input.value.trim();
       if (!text) return;
+      
       displayMsg(text, 'user');
       saveToMemory("user", text);
       input.value = "";
+      
+      showTypingIndicator();
 
       let prompt = "System: You are Dechris AI created by the Havenova-x team lead by their founder Dechris, a helpful, calm and intelligent assistant. ";
       prompt += "Keep responses clean, avoid emojis, and never repeat characters or symbols. ";
       prompt += "If any user asks to contact Havenova-x, give them the email havenova.x@gmail.com. ";
-      prompt += "Tell users you are also available as a mobile app here: https://dechris-ai.en.uptodown.com/android ";
+      prompt += "Mention that you are also available as a mobile app here: https://dechris-ai.en.uptodown.com/android when appropriate. ";
       prompt += "You are currently chatting with " + username + ".\n";
 
       const mem = getMemory();
@@ -267,45 +402,75 @@
       fetch(url)
         .then(r => r.json())
         .then(data => {
-          let reply = data.response || data.error || "⚠️ Empty reply.";
+          let reply = data.response || data.error || "I couldn't generate a response. Please try again.";
           reply = reply.replace(/[😀-🙏]/gu, '');
           displayMsg(reply, 'ai');
           if (voiceEnabled) speak(reply);
           saveToMemory("assistant", reply);
         })
         .catch(_ => {
-          displayMsg("⚠️ Request failed.", "ai");
+          displayMsg("Sorry, I'm having trouble connecting. Please check your internet connection and try again.", "ai");
         });
     }
 
     function speak(text) {
       if ('speechSynthesis' in window && voiceEnabled) {
         const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.0;
+        u.pitch = 1.0;
         window.speechSynthesis.speak(u);
       }
     }
 
     function startVoiceInput() {
       if (!('webkitSpeechRecognition' in window)) {
-        alert("Voice input not supported");
+        alert("Voice input is not supported in your browser");
         return;
       }
       const rec = new webkitSpeechRecognition();
       rec.lang = "en-US";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      
+      const voiceButton = document.querySelector('#inputBox button:last-child');
+      voiceButton.textContent = "🎙 Listening...";
+      voiceButton.style.background = "#ff5722";
+      
       rec.start();
+      
       rec.onresult = e => {
-        document.getElementById("userInput").value = e.results[0][0].transcript;
+        const transcript = e.results[0][0].transcript;
+        document.getElementById("userInput").value = transcript;
+        voiceButton.textContent = "🎙";
+        voiceButton.style.background = "#007bff";
         sendMessage();
       };
+      
+      rec.onerror = e => {
+        voiceButton.textContent = "🎙";
+        voiceButton.style.background = "#007bff";
+        displayMsg("Voice input failed: " + e.error, 'ai');
+      };
+      
+      rec.onend = () => {
+        if (voiceButton.textContent === "🎙 Listening...") {
+          voiceButton.textContent = "🎙";
+          voiceButton.style.background = "#007bff";
+        }
+      };
     }
+
+    document.getElementById("userInput").addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') sendMessage();
+    });
 
     if (/android/i.test(navigator.userAgent)) {
       document.body.innerHTML = `
         <div style="padding:2rem;text-align:center">
-          <h2>Dechris AI Web is not available on Android</h2>
-          <p>Please download the app instead:</p>
-          <a href="https://dechris-ai.en.uptodown.com/android" style="padding:1rem;background:#007bff;color:#fff;border-radius:8px;text-decoration:none;">
-            Download App
+          <h2>Dechris AI Web is not optimized for Android</h2>
+          <p>For the best experience, please download our mobile app:</p>
+          <a href="https://dechris-ai.en.uptodown.com/android" style="padding:1rem;background:#007bff;color:#fff;border-radius:8px;text-decoration:none;display:inline-block;margin-top:1rem;">
+            Download Mobile App
           </a>
         </div>`;
     }
