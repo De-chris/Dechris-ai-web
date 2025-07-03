@@ -214,15 +214,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 0.8rem;
     }
     #inputBox button:hover {
       background: #555555;
     }
     .dark-mode #inputBox button {
       background: #ffffff;
-    }
-    .dark-mode #inputBox button svg {
-      fill: #333333;
+      color: #333333;
     }
     .hidden { display: none; }
     .app-promo {
@@ -297,11 +296,7 @@
     </div>
     <div id="inputBox">
       <input type="text" id="userInput" placeholder="Ask something..." onkeypress="handleKeyPress(event)">
-      <button onclick="sendMessage()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" class="light-mode">
-          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-        </svg>
-      </button>
+      <button onclick="sendMessage()">Send</button>
     </div>
   </div>
   <script>
