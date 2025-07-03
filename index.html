@@ -101,7 +101,7 @@
       cursor: pointer;
       z-index: 1001;
       transition: opacity 0.5s, background 0.2s;
-      font-size: 1.2rem;
+      font-size: 0.9rem;
     }
     #drawerToggle:hover {
       background: rgba(50, 50, 50, 0.9);
@@ -189,15 +189,19 @@
       background: #333333;
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
-    #inputBox input {
+    #inputBox textarea {
       flex: 1;
       padding: 0.6rem;
       border-radius: 12px;
       border: 1px solid #ddd;
       background: #ffffff;
       color: #333333;
+      max-height: 15em;
+      resize: vertical;
+      overflow-y: auto;
+      line-height: 1.5;
     }
-    .dark-mode #inputBox input {
+    .dark-mode #inputBox textarea {
       background: #333333;
       border-color: #444;
       color: #f0f0f0;
@@ -251,7 +255,7 @@
       border: none;
       color: #007bff;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.9rem;
     }
     .dark-mode .app-promo .cancel-btn {
       color: #4da6ff;
@@ -275,16 +279,16 @@
     <div>Dechris AI</div>
     <small>Dechris AI Web</small>
   </div>
-  <button id="drawerToggle">☰</button>
+  <button id="drawerToggle">Menu</button>
   <div id="drawer">
-    <button onclick="toggleDarkMode()">🌗 Toggle Dark Mode</button>
-    <button onclick="changeName()">👤 Change Your Name</button>
-    <button onclick="exportChat()">📤 Export Chat</button>
-    <button onclick="clearChats()">🗑️ Clear All Chats</button>
-    <button onclick="toggleVoice()">🔊 Toggle Voice: <span id="voiceStatus">ON</span></button>
+    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+    <button onclick="changeName()">Change Your Name</button>
+    <button onclick="exportChat()">Export Chat</button>
+    <button onclick="clearChats()">Clear All Chats</button>
+    <button onclick="toggleVoice()">Toggle Voice: <span id="voiceStatus">ON</span></button>
     <hr>
-    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">📲 Download Mobile App</a>
-    <a href="mailto:havenova.x@gmail.com" target="_blank">✉️ Contact Havenova-x</a>
+    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">Download Mobile App</a>
+    <a href="mailto:havenova.x@gmail.com" target="_blank">Contact Havenova-x</a>
     <hr>
     <small style="color:#aaa;font-size:0.8rem;text-align:center">Dechris AI Web</small>
   </div>
@@ -292,10 +296,10 @@
     <div id="chatBox"></div>
     <div class="app-promo hidden">
       Enjoying Dechris AI? Get the full experience with our <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">mobile app</a>!
-      <button class="cancel-btn" onclick="hidePromo()">✕</button>
+      <button class="cancel-btn" onclick="hidePromo()">Close</button>
     </div>
     <div id="inputBox">
-      <input type="text" id="userInput" placeholder="Ask something..." onkeypress="handleKeyPress(event)">
+      <textarea id="userInput" placeholder="Ask something..." maxlength="2048" onkeypress="handleKeyPress(event)"></textarea>
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -479,13 +483,22 @@
         sendMessage();
       } else if (e.key === 'Enter' && e.shiftKey) {
         e.preventDefault();
-        userInput.value += '\n';
+        const lines = userInput.value.split('\n').length;
+        if (lines < 10) {
+          userInput.value += '\n';
+        } else {
+          displayMsg("System: Maximum 10 lines reached.", 'ai');
+        }
       }
     }
 
     function sendMessage() {
       const text = userInput.value.trim();
       if (!text) return;
+      if (text.length > 2048) {
+        displayMsg("System: Message exceeds 2048 characters. Please shorten it.", 'ai');
+        return;
+      }
       displayMsg(text, 'user');
       saveToMemory("user", text);
       userInput.value = "";
@@ -510,7 +523,6 @@
         .then(r => r.json())
         .then(data => {
           let reply = data.response || data.error || "I couldn't generate a response. Please try again.";
-          reply = reply.replace(/[😀-🙏]/gu, '');
           displayMsg(reply, 'ai');
           if (voiceEnabled) speak(reply);
           saveToMemory("assistant", reply);
