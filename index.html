@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dechris AI</title>
+  <link rel="icon" href="logo.png" type="image/png">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap">
   <style>
     * {
@@ -13,57 +14,100 @@
       font-family: 'Poppins', sans-serif;
     }
     body {
-      background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
-      color: #000;
+      background: #ffffff;
+      color: #333333;
       transition: background 0.3s, color 0.3s;
     }
     .dark-mode {
-      background: linear-gradient(145deg, #000000, #1a1a1a);
-      color: #fff;
+      background: #333333;
+      color: #f0f0f0;
     }
     .light-mode {
-      background: #fff;
-      color: #000;
+      background: #ffffff;
+      color: #333333;
     }
     .light-mode .user {
-      background: #444 !important;
-      color: #fff;
-    }
-    .light-mode .ai {
-      color: #000;
+      background: #333333 !important;
+      color: #ffffff;
     }
     .dark-mode .user {
-      background: #333 !important;
+      background: #ffffff !important;
+      color: #333333;
+    }
+    .light-mode .ai {
+      color: #333333;
+      background: none;
+    }
+    .dark-mode .ai {
+      color: #f0f0f0;
+      background: none;
     }
     #drawer {
       position: fixed;
-      top: 50px;
-      left: 10px;
-      background: rgba(0,0,0,0.8);
+      top: 0;
+      left: -300px;
+      width: 280px;
+      height: 100vh;
+      background: rgba(30, 30, 30, 0.95);
       color: #fff;
-      padding: 1rem;
-      border-radius: 8px;
+      padding: 1.5rem 1rem;
       display: flex;
       flex-direction: column;
       gap: 0.8rem;
       z-index: 1000;
-      width: 200px;
+      transition: left 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+    }
+    #drawer.open {
+      left: 0;
     }
     #drawer button, #drawer a {
-      background: #222;
+      background: #444;
       color: #fff;
       border: none;
-      padding: 0.6rem 1rem;
-      border-radius: 5px;
+      padding: 0.8rem;
+      border-radius: 8px;
       cursor: pointer;
       text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      text-decoration: none;
+      transition: background 0.2s;
+      font-size: 0.95rem;
     }
     #drawer button:hover, #drawer a:hover {
-      background: #333;
+      background: #555;
+    }
+    #drawer a {
+      text-decoration: none;
+      display: block;
+    }
+    #drawer hr {
+      border: none;
+      border-top: 1px solid #555;
+      margin: 0.5rem 0;
+    }
+    #drawerToggle {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      background: rgba(30, 30, 30, 0.8);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1001;
+      transition: opacity 0.5s, background 0.2s;
+      font-size: 1.2rem;
+    }
+    #drawerToggle:hover {
+      background: rgba(50, 50, 50, 0.9);
+    }
+    #drawerToggle.hidden {
+      opacity: 0;
     }
     #splash {
       position: fixed;
@@ -97,119 +141,132 @@
     }
     @keyframes pulse {
       0%, 100% { transform: scale(1); opacity: 1; }
-      50%      { transform: scale(1.1); opacity: 0.9; }
+      50% { transform: scale(1.1); opacity: 0.9; }
     }
     .main {
       padding: 1rem;
       max-width: 700px;
       margin: 0 auto;
-    }
-    #modeBtn {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      padding: 0.4rem 0.6rem;
-      font-size: 0.9rem;
-      background: #444;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      padding-top: 5rem;
     }
     #chatBox {
-      margin-top: 4rem;
+      margin-top: 1rem;
       display: flex;
       flex-direction: column;
       gap: 0.8rem;
     }
     .chat-msg {
-      padding: 0.8rem 1rem;
-      border-radius: 12px;
-      margin: 0.2rem 0;
-      max-width: 80%;
+      padding: 1rem;
+      border-radius: 16px;
+      max-width: 85%;
       word-wrap: break-word;
       line-height: 1.5;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .user {
-      background: rgba(0, 123, 255, 0.2);
       align-self: flex-end;
-      color: #000;
-    }
-    .dark-mode .user { 
-      color: #fff;
-      background: #333 !important;
+      border-bottom-right-radius: 4px;
     }
     .ai {
-      background: transparent !important;
       align-self: flex-start;
-      color: #000;
-    }
-    .dark-mode .ai { 
-      color: #fff;
+      border-bottom-left-radius: 4px;
     }
     #inputBox {
       display: flex;
       gap: 0.5rem;
       margin-top: 1.5rem;
-      padding: 0.5rem 0;
+      position: sticky;
+      bottom: 1rem;
+      background: #ffffff;
+      padding: 0.6rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
     }
-    #userInput {
+    .dark-mode #inputBox {
+      background: #333333;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    #inputBox input {
       flex: 1;
-      padding: 0.7rem 1rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
+      padding: 0.6rem;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      background: #ffffff;
+      color: #333333;
+    }
+    .dark-mode #inputBox input {
+      background: #333333;
+      border-color: #444;
+      color: #f0f0f0;
     }
     #inputBox button {
-      padding: 0.7rem 1rem;
       border: none;
-      background: #007bff;
+      background: #444444;
       color: white;
-      border-radius: 6px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #inputBox button:hover {
+      background: #555555;
+    }
+    .dark-mode #inputBox button {
+      background: #ffffff;
+    }
+    .dark-mode #inputBox button svg {
+      fill: #333333;
+    }
+    .hidden { display: none; }
+    .app-promo {
+      background: rgba(0, 123, 255, 0.1);
+      border-radius: 10px;
+      padding: 1rem;
+      margin: 1rem 0;
+      text-align: center;
+      position: relative;
+    }
+    .dark-mode .app-promo {
+      background: rgba(0, 123, 255, 0.2);
+    }
+    .app-promo a {
+      color: #007bff;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .dark-mode .app-promo a {
+      color: #4da6ff;
+    }
+    .app-promo .cancel-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: none;
+      border: none;
+      color: #007bff;
       cursor: pointer;
       font-size: 1rem;
     }
-    #inputBox button:last-child {
-      padding: 0.7rem;
-      min-width: 40px;
+    .dark-mode .app-promo .cancel-btn {
+      color: #4da6ff;
     }
-    .hidden { display: none; }
-    .typing-indicator {
-      display: inline-block;
-      margin-left: 5px;
-    }
-    .typing-indicator span {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      background-color: #888;
-      border-radius: 50%;
-      margin-right: 3px;
-      animation: typing 1s infinite ease-in-out;
-    }
-    .typing-indicator span:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    .typing-indicator span:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-    @keyframes typing {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-    }
-    .app-banner {
-      background: #007bff;
-      color: white;
-      padding: 0.8rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      text-align: center;
-      display: none;
-    }
-    .app-banner a {
-      color: white;
-      text-decoration: underline;
-      font-weight: bold;
+    @media (max-width: 600px) {
+      .main {
+        padding-top: 4rem;
+      }
+      #drawer {
+        width: 260px;
+      }
+      .chat-msg {
+        max-width: 90%;
+      }
     }
   </style>
 </head>
@@ -219,77 +276,114 @@
     <div>Dechris AI</div>
     <small>Dechris AI Web</small>
   </div>
-
+  <button id="drawerToggle">☰</button>
   <div id="drawer">
     <button onclick="toggleDarkMode()">🌗 Toggle Dark Mode</button>
-    <button onclick="changeName()">👤 Change Name</button>
-    <button onclick="clearChats()">🗑️ Clear Chat History</button>
-    <button onclick="toggleVoice()">🔊 <span id="voiceStatus">Voice: ON</span></button>
+    <button onclick="changeName()">👤 Change Your Name</button>
     <button onclick="exportChat()">📤 Export Chat</button>
-    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">📲 Get Mobile App</a>
+    <button onclick="clearChats()">🗑️ Clear All Chats</button>
+    <button onclick="toggleVoice()">🔊 Toggle Voice: <span id="voiceStatus">ON</span></button>
+    <hr>
+    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">📲 Download Mobile App</a>
+    <a href="mailto:havenova.x@gmail.com" target="_blank">✉️ Contact Havenova-x</a>
+    <hr>
+    <small style="color:#aaa;font-size:0.8rem;text-align:center">Dechris AI Web</small>
   </div>
-
   <div class="main hidden">
-    <div class="app-banner" id="mobileBanner">
-      Enjoy Dechris AI on the go! <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">Download our mobile app</a>
-    </div>
     <div id="chatBox"></div>
+    <div class="app-promo hidden">
+      Enjoying Dechris AI? Get the full experience with our <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">mobile app</a>!
+      <button class="cancel-btn" onclick="hidePromo()">✕</button>
+    </div>
     <div id="inputBox">
-      <input type="text" id="userInput" placeholder="Ask something..." autocomplete="off">
-      <button onclick="sendMessage()">Send</button>
-      <button onclick="startVoiceInput()">🎙</button>
+      <input type="text" id="userInput" placeholder="Ask something..." onkeypress="handleKeyPress(event)">
+      <button onclick="sendMessage()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" class="light-mode">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+        </svg>
+      </button>
     </div>
   </div>
-
   <script>
     let voiceEnabled = true;
     let username = localStorage.getItem("dechris_username") || prompt("What's your name?") || "User";
     localStorage.setItem("dechris_username", username);
-    let isTyping = false;
-
+    let drawerTimeout;
     const splash = document.getElementById("splash");
     const main = document.querySelector(".main");
     const chatBox = document.getElementById("chatBox");
     const voiceStatus = document.getElementById("voiceStatus");
-    const mobileBanner = document.getElementById("mobileBanner");
+    const drawer = document.getElementById("drawer");
+    const drawerToggle = document.getElementById("drawerToggle");
+    const userInput = document.getElementById("userInput");
+    const appPromo = document.querySelector(".app-promo");
 
-    // Show mobile banner only once per session
-    if (!sessionStorage.getItem('bannerShown')) {
-      mobileBanner.style.display = 'block';
-      sessionStorage.setItem('bannerShown', 'true');
-      setTimeout(() => {
-        mobileBanner.style.display = 'none';
-      }, 10000);
-    }
-
+    // Initialize app
     setTimeout(() => {
       splash.style.display = "none";
       main.classList.remove("hidden");
       loadChatDisplay();
-      
-      // Initial greeting
-      if (chatBox.children.length === 0) {
-        showTypingIndicator();
-        setTimeout(() => {
-          removeTypingIndicator();
-          const greeting = `Hello ${username}! I'm Dechris AI, your intelligent assistant. How can I help you today?\n\nBy the way, did you know I'm also available as a mobile app? You can download it here: https://dechris-ai.en.uptodown.com/android`;
-          displayMsg(greeting, 'ai');
-        }, 1500);
-      }
+      startDrawerTimer();
+      showPromo();
     }, 3000);
+
+    // Set initial dark mode if preferred
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add("dark-mode");
+    } else {
+      document.body.classList.add("light-mode");
+    }
+
+    // Drawer toggle functionality
+    drawerToggle.addEventListener("click", () => {
+      drawer.classList.toggle("open");
+      resetDrawerTimer();
+    });
+
+    // Close drawer when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!drawer.contains(e.target) && !drawerToggle.contains(e.target) && drawer.classList.contains("open")) {
+        closeDrawer();
+      }
+    });
+
+    function startDrawerTimer() {
+      drawerTimeout = setTimeout(() => {
+        drawerToggle.classList.add("hidden");
+      }, 3000);
+    }
+
+    function resetDrawerTimer() {
+      clearTimeout(drawerTimeout);
+      drawerToggle.classList.remove("hidden");
+      startDrawerTimer();
+    }
+
+    document.addEventListener("mousemove", (e) => {
+      if (e.clientX < 60) {
+        drawerToggle.classList.remove("hidden");
+        resetDrawerTimer();
+      }
+    });
 
     function toggleDarkMode() {
       document.body.classList.toggle("dark-mode");
       document.body.classList.toggle("light-mode");
+      closeDrawer();
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove("open");
     }
 
     function changeName() {
-      const newName = prompt("Enter new name:", username) || "User";
+      const newName = prompt("Enter your new name:", username) || username;
       if (newName !== username) {
         username = newName;
         localStorage.setItem("dechris_username", newName);
-        displayMsg(`Name changed to ${newName}`, 'ai');
+        displayMsg(`System: Your name has been updated to ${username}`, 'ai');
       }
+      closeDrawer();
     }
 
     function clearChats() {
@@ -297,60 +391,64 @@
         localStorage.removeItem("dechris_chat_display");
         localStorage.removeItem("dechris_chat_memory");
         chatBox.innerHTML = "";
-        displayMsg("Chat history has been cleared.", 'ai');
+        displayMsg("System: Chat history has been cleared", 'ai');
       }
-    }
-
-    function toggleVoice() {
-      voiceEnabled = !voiceEnabled;
-      voiceStatus.textContent = `Voice: ${voiceEnabled ? "ON" : "OFF"}`;
-      displayMsg(`Voice feedback ${voiceEnabled ? "enabled" : "disabled"}`, 'ai');
+      closeDrawer();
     }
 
     function exportChat() {
-      let chatText = '';
+      let chatText = "Dechris AI Chat History\n\n";
       const messages = chatBox.querySelectorAll('.chat-msg');
       messages.forEach(msg => {
-        const sender = msg.classList.contains('user') ? username : 'Dechris AI';
-        chatText += `${sender}: ${msg.textContent}\n\n`;
+        const sender = msg.classList.contains('user') ? `${username}: ` : 'Dechris AI: ';
+        chatText += sender + msg.textContent + '\n\n';
       });
-      
       const blob = new Blob([chatText], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `DechrisAI_Chat_${new Date().toISOString().slice(0,10)}.txt`;
+      a.download = `DechrisAI-Chat-${new Date().toISOString().slice(0,10)}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      displayMsg("System: Chat exported successfully", 'ai');
+      closeDrawer();
     }
 
-    function showTypingIndicator() {
-      if (isTyping) return;
-      isTyping = true;
-      const typingDiv = document.createElement('div');
-      typingDiv.className = 'chat-msg ai';
-      typingDiv.id = 'typingIndicator';
-      typingDiv.innerHTML = 'Thinking<span class="typing-indicator"><span></span><span></span><span></span></span>';
-      chatBox.appendChild(typingDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      voiceStatus.textContent = voiceEnabled ? "ON" : "OFF";
+      if (!voiceEnabled && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      closeDrawer();
     }
 
-    function removeTypingIndicator() {
-      isTyping = false;
-      const indicator = document.getElementById('typingIndicator');
-      if (indicator) indicator.remove();
+    function showPromo() {
+      const lastDismissed = localStorage.getItem("dechris_promo_dismissed");
+      const now = Date.now();
+      const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+      if (!lastDismissed || (now - parseInt(lastDismissed) > oneWeek)) {
+        appPromo.classList.remove("hidden");
+      }
+    }
+
+    function hidePromo() {
+      appPromo.classList.add("hidden");
+      localStorage.setItem("dechris_promo_dismissed", Date.now());
     }
 
     function displayMsg(msg, sender) {
-      removeTypingIndicator();
       const bubble = document.createElement("div");
       bubble.className = `chat-msg ${sender}`;
       bubble.textContent = msg;
       chatBox.appendChild(bubble);
       chatBox.scrollTop = chatBox.scrollHeight;
       saveChatDisplay();
+      if (sender === 'ai' && drawer.classList.contains('open')) {
+        closeDrawer();
+      }
     }
 
     function saveChatDisplay() {
@@ -359,7 +457,15 @@
 
     function loadChatDisplay() {
       const html = localStorage.getItem("dechris_chat_display");
-      if (html) chatBox.innerHTML = html;
+      if (html) {
+        chatBox.innerHTML = html;
+        if (chatBox.children.length === 0) {
+          displayMsg(`Hello ${username}! I'm Dechris AI, your intelligent assistant. You can ask me anything. Also, did you know we have a mobile app? Get it here: https://dechris-ai.en.uptodown.com/android`, 'ai');
+        }
+      } else {
+        displayMsg(`Hello ${username}! I'm Dechris AI, your intelligent assistant. You can ask me anything. Also, did you know we have a mobile app? Get it here: https://dechris-ai.en.uptodown.com/android`, 'ai');
+      }
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     function saveToMemory(role, content) {
@@ -372,23 +478,29 @@
       return JSON.parse(localStorage.getItem("dechris_chat_memory") || "[]");
     }
 
+    function handleKeyPress(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      } else if (e.key === 'Enter' && e.shiftKey) {
+        e.preventDefault();
+        userInput.value += '\n';
+      }
+    }
+
     function sendMessage() {
-      const input = document.getElementById("userInput");
-      const text = input.value.trim();
+      const text = userInput.value.trim();
       if (!text) return;
-      
       displayMsg(text, 'user');
       saveToMemory("user", text);
-      input.value = "";
-      
-      showTypingIndicator();
+      userInput.value = "";
+      userInput.focus();
 
       let prompt = "System: You are Dechris AI created by the Havenova-x team lead by their founder Dechris, a helpful, calm and intelligent assistant. ";
       prompt += "Keep responses clean, avoid emojis, and never repeat characters or symbols. ";
       prompt += "If any user asks to contact Havenova-x, give them the email havenova.x@gmail.com. ";
       prompt += "Mention that you are also available as a mobile app here: https://dechris-ai.en.uptodown.com/android when appropriate. ";
       prompt += "You are currently chatting with " + username + ".\n";
-
       const mem = getMemory();
       for (let msg of mem) {
         let c = msg.content.trim();
@@ -422,54 +534,14 @@
       }
     }
 
-    function startVoiceInput() {
-      if (!('webkitSpeechRecognition' in window)) {
-        alert("Voice input is not supported in your browser");
-        return;
-      }
-      const rec = new webkitSpeechRecognition();
-      rec.lang = "en-US";
-      rec.interimResults = false;
-      rec.maxAlternatives = 1;
-      
-      const voiceButton = document.querySelector('#inputBox button:last-child');
-      voiceButton.textContent = "🎙 Listening...";
-      voiceButton.style.background = "#ff5722";
-      
-      rec.start();
-      
-      rec.onresult = e => {
-        const transcript = e.results[0][0].transcript;
-        document.getElementById("userInput").value = transcript;
-        voiceButton.textContent = "🎙";
-        voiceButton.style.background = "#007bff";
-        sendMessage();
-      };
-      
-      rec.onerror = e => {
-        voiceButton.textContent = "🎙";
-        voiceButton.style.background = "#007bff";
-        displayMsg("Voice input failed: " + e.error, 'ai');
-      };
-      
-      rec.onend = () => {
-        if (voiceButton.textContent === "🎙 Listening...") {
-          voiceButton.textContent = "🎙";
-          voiceButton.style.background = "#007bff";
-        }
-      };
-    }
-
-    document.getElementById("userInput").addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') sendMessage();
-    });
-
+    // Android redirect
     if (/android/i.test(navigator.userAgent)) {
       document.body.innerHTML = `
-        <div style="padding:2rem;text-align:center">
-          <h2>Dechris AI Web is not optimized for Android</h2>
-          <p>For the best experience, please download our mobile app:</p>
-          <a href="https://dechris-ai.en.uptodown.com/android" style="padding:1rem;background:#007bff;color:#fff;border-radius:8px;text-decoration:none;display:inline-block;margin-top:1rem;">
+        <div style="padding:2rem;text-align:center;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+          <img src="logo.png" alt="Dechris AI Logo" style="width:80px;height:80px;margin-bottom:1rem;">
+          <h2 style="margin-bottom:1rem;">Dechris AI Web is optimized for desktop</h2>
+          <p style="margin-bottom:2rem;">For the best experience, please download our mobile app:</p>
+          <a href="https://dechris-ai.en.uptodown.com/android" style="padding:1rem 2rem;background:#007bff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
             Download Mobile App
           </a>
         </div>`;
