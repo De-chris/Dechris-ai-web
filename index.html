@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dechris AI</title>
+  <title>Dechris AI V2.0</title>
   <link rel="icon" href="logo.png" type="image/png">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     * {
       margin: 0;
@@ -13,35 +14,48 @@
       box-sizing: border-box;
       font-family: 'Poppins', sans-serif;
     }
+
     body {
-      background: #ffffff;
-      color: #333333;
-      transition: background 0.3s, color 0.3s;
+      background: linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%);
+      color: #1A1A1A;
+      transition: background 0.5s, color 0.5s;
+      overflow-x: hidden;
     }
+
     .dark-mode {
-      background: #333333;
-      color: #f0f0f0;
+      background: linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%);
+      color: #F0F0F0;
     }
+
     .light-mode {
-      background: #ffffff;
-      color: #333333;
+      background: linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%);
+      color: #1A1A1A;
     }
+
     .light-mode .user {
-      background: #333333 !important;
-      color: #ffffff;
+      background: #007BFF !important;
+      color: #FFFFFF;
+      border-radius: 16px 16px 4px 16px;
     }
+
     .dark-mode .user {
-      background: #ffffff !important;
-      color: #333333;
+      background: #4DA6FF !important;
+      color: #1A1A1A;
+      border-radius: 16px 16px 4px 16px;
     }
+
     .light-mode .ai {
-      color: #333333;
-      background: none;
+      background: #E8ECEF;
+      color: #1A1A1A;
+      border-radius: 16px 4px 16px 16px;
     }
+
     .dark-mode .ai {
-      color: #f0f0f0;
-      background: none;
+      background: #333333;
+      color: #F0F0F0;
+      border-radius: 16px 4px 16px 16px;
     }
+
     #drawer {
       position: fixed;
       top: 0;
@@ -49,226 +63,358 @@
       width: 280px;
       height: 100vh;
       background: rgba(30, 30, 30, 0.95);
-      color: #fff;
+      backdrop-filter: blur(10px);
+      color: #F0F0F0;
       padding: 1.5rem 1rem;
       display: flex;
       flex-direction: column;
       gap: 0.8rem;
       z-index: 1000;
       transition: left 0.3s ease;
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+      box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
       overflow-y: auto;
     }
+
     #drawer.open {
       left: 0;
     }
+
+    #drawer .chat-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #4DA6FF;
+      margin: 0.5rem 0;
+      text-align: center;
+    }
+
+    #drawer .chat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    #drawer .chat-item {
+      background: #444444;
+      color: #F0F0F0;
+      border: none;
+      padding: 0.6rem;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.9rem;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    #drawer .chat-item:hover {
+      background: #555555;
+      transform: translateX(5px);
+    }
+
+    #drawer .chat-item.active {
+      background: #007BFF;
+    }
+
     #drawer button, #drawer a {
-      background: #444;
-      color: #fff;
+      background: #444444;
+      color: #F0F0F0;
       border: none;
       padding: 0.8rem;
       border-radius: 8px;
       cursor: pointer;
       text-align: left;
-      transition: background 0.2s;
       font-size: 0.95rem;
+      transition: background 0.2s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
+
     #drawer button:hover, #drawer a:hover {
-      background: #555;
+      background: #555555;
+      transform: translateX(5px);
     }
+
     #drawer a {
       text-decoration: none;
-      display: block;
+      display: flex;
     }
+
     #drawer hr {
       border: none;
-      border-top: 1px solid #555;
+      border-top: 1px solid #555555;
       margin: 0.5rem 0;
     }
+
     #drawerToggle {
       position: fixed;
       top: 15px;
       left: 15px;
       background: rgba(30, 30, 30, 0.8);
-      color: white;
+      backdrop-filter: blur(5px);
+      color: #F0F0F0;
       border: none;
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 1001;
-      transition: opacity 0.5s, background 0.2s;
-      font-size: 0.9rem;
+      transition: background 0.2s, transform 0.2s;
+      font-size: 1.2rem;
     }
+
     #drawerToggle:hover {
       background: rgba(50, 50, 50, 0.9);
+      transform: scale(1.1);
     }
+
     #drawerToggle.hidden {
       opacity: 0;
     }
+
     #splash {
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: #000;
-      color: #fff;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%);
+      color: #F0F0F0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 2em;
+      font-size: 2.5rem;
+      font-weight: 700;
       animation: fadeZoom 3s ease-out forwards;
       z-index: 999;
     }
+
     #splash img {
-      width: 100px;
-      height: 100px;
+      width: 120px;
+      height: 120px;
       margin-bottom: 1rem;
       animation: pulse 2s infinite ease-in-out;
     }
+
     #splash small {
-      font-size: 0.4em;
-      color: #bbb;
+      font-size: 0.6rem;
+      color: #BBBBBB;
     }
+
     @keyframes fadeZoom {
       0% { transform: scale(1); opacity: 1; }
       25% { transform: scale(1.3); }
       50% { transform: scale(0.8); opacity: 0.8; }
       100% { transform: scale(1.1); opacity: 0; }
     }
+
     @keyframes pulse {
       0%, 100% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.1); opacity: 0.9; }
     }
+
     .main {
-      padding: 1rem;
-      max-width: 700px;
+      padding: 1.5rem;
+      max-width: 900px;
       margin: 0 auto;
       padding-top: 5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
+
     #chatBox {
+      flex: 1;
       margin-top: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.8rem;
+      gap: 1rem;
+      padding-bottom: 5rem;
     }
+
     .chat-msg {
       padding: 1rem;
       border-radius: 16px;
-      max-width: 85%;
+      max-width: 80%;
       word-wrap: break-word;
-      line-height: 1.5;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      line-height: 1.6;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s;
     }
-    .user {
-      align-self: flex-end;
-      border-bottom-right-radius: 4px;
+
+    .chat-msg:hover {
+      transform: translateY(-2px);
     }
-    .ai {
-      align-self: flex-start;
-      border-bottom-left-radius: 4px;
-    }
+
     #inputBox {
       display: flex;
       gap: 0.5rem;
       margin-top: 1.5rem;
       position: sticky;
       bottom: 1rem;
-      background: #ffffff;
-      padding: 0.6rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      max-width: 700px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      padding: 0.8rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      max-width: 900px;
       margin-left: auto;
       margin-right: auto;
     }
+
     .dark-mode #inputBox {
-      background: #333333;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      background: rgba(30, 30, 30, 0.9);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
     }
+
     #inputBox textarea {
       flex: 1;
-      padding: 0.6rem;
+      padding: 0.8rem;
       border-radius: 12px;
-      border: 1px solid #ddd;
-      background: #ffffff;
-      color: #333333;
+      border: 1px solid #DDDDDD;
+      background: #FFFFFF;
+      color: #1A1A1A;
       max-height: 15em;
       resize: vertical;
       overflow-y: auto;
       line-height: 1.5;
+      font-size: 1rem;
+      transition: border-color 0.2s;
     }
+
+    #inputBox textarea:focus {
+      border-color: #007BFF;
+      outline: none;
+    }
+
     .dark-mode #inputBox textarea {
       background: #333333;
-      border-color: #444;
-      color: #f0f0f0;
+      border-color: #555555;
+      color: #F0F0F0;
     }
+
     #inputBox button {
       border: none;
-      background: #444444;
-      color: white;
+      background: #007BFF;
+      color: #FFFFFF;
       border-radius: 50%;
       cursor: pointer;
-      transition: background 0.2s;
-      width: 40px;
-      height: 40px;
+      transition: background 0.2s, transform 0.2s;
+      width: 48px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.8rem;
+      font-size: 1.2rem;
+      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.4);
     }
+
     #inputBox button:hover {
-      background: #555555;
+      background: #005BC4;
+      transform: scale(1.1);
     }
+
     .dark-mode #inputBox button {
-      background: #ffffff;
-      color: #333333;
+      background: #4DA6FF;
+      color: #1A1A1A;
     }
-    .hidden { display: none; }
+
     .app-promo {
-      background: rgba(0, 123, 255, 0.1);
-      border-radius: 10px;
+      background: rgba(0, 123, 255, 0.15);
+      border-radius: 12px;
       padding: 1rem;
       margin: 1rem 0;
       text-align: center;
       position: relative;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
+
     .dark-mode .app-promo {
-      background: rgba(0, 123, 255, 0.2);
+      background: rgba(0, 123, 255, 0.25);
     }
+
     .app-promo a {
-      color: #007bff;
+      color: #007BFF;
       font-weight: 600;
       text-decoration: none;
     }
+
     .dark-mode .app-promo a {
-      color: #4da6ff;
+      color: #4DA6FF;
     }
+
     .app-promo .cancel-btn {
       position: absolute;
       top: 0.5rem;
       right: 0.5rem;
       background: none;
       border: none;
-      color: #007bff;
+      color: #007BFF;
       cursor: pointer;
       font-size: 0.9rem;
     }
+
     .dark-mode .app-promo .cancel-btn {
-      color: #4da6ff;
+      color: #4DA6FF;
     }
-    @media (max-width: 600px) {
+
+    .hidden { display: none; }
+
+    @media (max-width: 768px) {
       .main {
+        padding: 1rem;
         padding-top: 4rem;
       }
+
       #drawer {
         width: 260px;
       }
+
       .chat-msg {
         max-width: 90%;
+      }
+
+      #inputBox {
+        padding: 0.6rem;
+      }
+
+      #splash {
+        font-size: 1.8rem;
+      }
+
+      #splash img {
+        width: 100px;
+        height: 100px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #drawer {
+        width: 100%;
+        left: -100%;
+      }
+
+      #drawerToggle {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+      }
+
+      #inputBox {
+        flex-direction: column;
+      }
+
+      #inputBox textarea {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+
+      #inputBox button {
+        width: 100%;
+        border-radius: 12px;
       }
     }
   </style>
@@ -276,31 +422,35 @@
 <body>
   <div id="splash">
     <img src="logo.png" alt="Dechris AI Logo">
-    <div>Dechris AI</div>
+    <div>Dechris AI V2.0</div>
     <small>Dechris AI Web</small>
   </div>
-  <button id="drawerToggle">Menu</button>
+  <button id="drawerToggle" aria-label="Toggle Menu"><i class="fas fa-bars"></i></button>
   <div id="drawer">
-    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
-    <button onclick="changeName()">Change Your Name</button>
-    <button onclick="exportChat()">Export Chat</button>
-    <button onclick="clearChats()">Clear All Chats</button>
-    <button onclick="toggleVoice()">Toggle Voice: <span id="voiceStatus">ON</span></button>
+    <div class="chat-title">Dechris AI Chats</div>
+    <div class="chat-list" id="chatList"></div>
+    <button onclick="createNewChat()"><i class="fas fa-plus"></i> New Chat</button>
     <hr>
-    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">Download Mobile App</a>
-    <a href="mailto:havenova.x@gmail.com" target="_blank">Contact Havenova-x</a>
+    <button onclick="toggleDarkMode()"><i class="fas fa-moon"></i> Toggle Dark Mode</button>
+    <button onclick="changeName()"><i class="fas fa-user-edit"></i> Change Your Name</button>
+    <button onclick="exportChat()"><i class="fas fa-download"></i> Export Chat</button>
+    <button onclick="clearChats()"><i class="fas fa-trash"></i> Clear All Chats</button>
+    <button onclick="toggleVoice()"><i class="fas fa-microphone"></i> Toggle Voice: <span id="voiceStatus">ON</span></button>
     <hr>
-    <small style="color:#aaa;font-size:0.8rem;text-align:center">Dechris AI Web</small>
+    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank"><i class="fas fa-mobile-alt"></i> Download Mobile App</a>
+    <a href="mailto:havenova.x@gmail.com" target="_blank"><i class="fas fa-envelope"></i> Contact Havenova-x</a>
+    <hr>
+    <small style="color:#AAAAAA;font-size:0.8rem;text-align:center">Dechris AI V2.0</small>
   </div>
   <div class="main hidden">
     <div id="chatBox"></div>
     <div class="app-promo hidden">
       Enjoying Dechris AI? Get the full experience with our <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">mobile app</a>!
-      <button class="cancel-btn" onclick="hidePromo()">Close</button>
+      <button class="cancel-btn" onclick="hidePromo()" aria-label="Close Promo">Close</button>
     </div>
     <div id="inputBox">
-      <textarea id="userInput" placeholder="Ask something..." maxlength="2048" onkeypress="handleKeyPress(event)"></textarea>
-      <button onclick="sendMessage()">Send</button>
+      <textarea id="userInput" placeholder="Ask something..." maxlength="2048" onkeypress="handleKeyPress(event)" aria-label="Chat Input"></textarea>
+      <button onclick="sendMessage()" aria-label="Send Message"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
   <script>
@@ -308,6 +458,9 @@
     let username = localStorage.getItem("dechris_username") || prompt("What's your name?") || "User";
     localStorage.setItem("dechris_username", username);
     let drawerTimeout;
+    let currentChatId = localStorage.getItem("dechris_current_chat") || "chat1";
+    let chats = JSON.parse(localStorage.getItem("dechris_chats") || "{}");
+
     const splash = document.getElementById("splash");
     const main = document.querySelector(".main");
     const chatBox = document.getElementById("chatBox");
@@ -316,12 +469,14 @@
     const drawerToggle = document.getElementById("drawerToggle");
     const userInput = document.getElementById("userInput");
     const appPromo = document.querySelector(".app-promo");
+    const chatList = document.getElementById("chatList");
 
     // Initialize app
     setTimeout(() => {
       splash.style.display = "none";
       main.classList.remove("hidden");
       loadChatDisplay();
+      updateChatList();
       startDrawerTimer();
       showPromo();
     }, 3000);
@@ -387,16 +542,20 @@
 
     function clearChats() {
       if (confirm("Are you sure you want to clear all chat history?")) {
-        localStorage.removeItem("dechris_chat_display");
+        localStorage.removeItem("dechris_chats");
         localStorage.removeItem("dechris_chat_memory");
+        chats = {};
+        currentChatId = "chat1";
+        localStorage.setItem("dechris_current_chat", currentChatId);
         chatBox.innerHTML = "";
+        updateChatList();
         displayMsg("System: Chat history has been cleared", 'ai');
       }
       closeDrawer();
     }
 
     function exportChat() {
-      let chatText = "Dechris AI Chat History\n\n";
+      let chatText = `Dechris AI Chat History - ${currentChatId}\n\n`;
       const messages = chatBox.querySelectorAll('.chat-msg');
       messages.forEach(msg => {
         const sender = msg.classList.contains('user') ? `${username}: ` : 'Dechris AI: ';
@@ -406,7 +565,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `DechrisAI-Chat-${new Date().toISOString().slice(0,10)}.txt`;
+      a.download = `DechrisAI-Chat-${currentChatId}-${new Date().toISOString().slice(0,10)}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -427,7 +586,7 @@
     function showPromo() {
       const lastDismissed = localStorage.getItem("dechris_promo_dismissed");
       const now = Date.now();
-      const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+      const oneWeek = 7 * 24 * 60 * 60 * 1000;
       if (!lastDismissed || (now - parseInt(lastDismissed) > oneWeek)) {
         appPromo.classList.remove("hidden");
       }
@@ -438,43 +597,76 @@
       localStorage.setItem("dechris_promo_dismissed", Date.now());
     }
 
+    function createNewChat() {
+      const chatIds = Object.keys(chats);
+      const newChatNumber = chatIds.length ? Math.max(...chatIds.map(id => parseInt(id.replace('chat', '')))) + 1 : 1;
+      const newChatId = `chat${newChatNumber}`;
+      chats[newChatId] = { messages: [], memory: [] };
+      currentChatId = newChatId;
+      localStorage.setItem("dechris_current_chat", currentChatId);
+      localStorage.setItem("dechris_chats", JSON.stringify(chats));
+      chatBox.innerHTML = "";
+      updateChatList();
+      displayMsg(`System: Started new conversation: ${newChatId}`, 'ai');
+      closeDrawer();
+    }
+
+    function switchChat(chatId) {
+      currentChatId = chatId;
+      localStorage.setItem("dechris_current_chat", currentChatId);
+      chatBox.innerHTML = chats[currentChatId]?.messages || "";
+      updateChatList();
+      chatBox.scrollTop = chatBox.scrollHeight;
+      closeDrawer();
+    }
+
+    function updateChatList() {
+      chatList.innerHTML = "";
+      Object.keys(chats).sort().forEach(chatId => {
+        const button = document.createElement("button");
+        button.className = `chat-item ${chatId === currentChatId ? 'active' : ''}`;
+        button.textContent = chatId.charAt(0).toUpperCase() + chatId.slice(1);
+        button.onclick = () => switchChat(chatId);
+        chatList.appendChild(button);
+      });
+    }
+
     function displayMsg(msg, sender) {
       const bubble = document.createElement("div");
       bubble.className = `chat-msg ${sender}`;
       bubble.textContent = msg;
       chatBox.appendChild(bubble);
       chatBox.scrollTop = chatBox.scrollHeight;
-      saveChatDisplay();
+      if (!chats[currentChatId]) chats[currentChatId] = { messages: "", memory: [] };
+      chats[currentChatId].messages = chatBox.innerHTML;
+      localStorage.setItem("dechris_chats", JSON.stringify(chats));
       if (sender === 'ai' && drawer.classList.contains('open')) {
         closeDrawer();
       }
     }
 
-    function saveChatDisplay() {
-      localStorage.setItem("dechris_chat_display", chatBox.innerHTML);
-    }
-
-    function loadChatDisplay() {
-      const html = localStorage.getItem("dechris_chat_display");
-      if (html) {
-        chatBox.innerHTML = html;
-        if (chatBox.children.length === 0) {
-          displayMsg(`Hello ${username}! I'm Dechris AI, your intelligent assistant. You can ask me anything. Also, did you know we have a mobile app? Get it here: https://dechris-ai.en.uptodown.com/android`, 'ai');
-        }
-      } else {
-        displayMsg(`Hello ${username}! I'm Dechris AI, your intelligent assistant. You can ask me anything. Also, did you know we have a mobile app? Get it here: https://dechris-ai.en.uptodown.com/android`, 'ai');
-      }
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
     function saveToMemory(role, content) {
-      const mem = JSON.parse(localStorage.getItem("dechris_chat_memory") || "[]");
-      mem.push({ role, content });
-      localStorage.setItem("dechris_chat_memory", JSON.stringify(mem));
+      if (!chats[currentChatId]) chats[currentChatId] = { messages: "", memory: [] };
+      chats[currentChatId].memory.push({ role, content });
+      if (chats[currentChatId].memory.length > 12) {
+        chats[currentChatId].memory = chats[currentChatId].memory.slice(-12);
+      }
+      localStorage.setItem("dechris_chats", JSON.stringify(chats));
     }
 
     function getMemory() {
-      return JSON.parse(localStorage.getItem("dechris_chat_memory") || "[]");
+      return chats[currentChatId]?.memory || [];
+    }
+
+    function loadChatDisplay() {
+      if (!chats[currentChatId]) {
+        chats[currentChatId] = { messages: "", memory: [] };
+        localStorage.setItem("dechris_chats", JSON.stringify(chats));
+        displayMsg(`Hello ${username}! I'm Dechris AI V2.0, your intelligent assistant. You can ask me anything. Also, did you know we have a mobile app? Get it here: https://dechris-ai.en.uptodown.com/android`, 'ai');
+      } else {
+        chatBox.innerHTML = chats[currentChatId].messages;
+      }
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     function handleKeyPress(e) {
@@ -504,7 +696,7 @@
       userInput.value = "";
       userInput.focus();
 
-      let prompt = "System: You are Dechris AI created by the Havenova-x team lead by their founder Dechris, a helpful, calm and intelligent assistant. ";
+      let prompt = "System: You are Dechris AI V2.0 created by the Havenova-x team lead by their founder Dechris, a helpful, calm and intelligent assistant. ";
       prompt += "Keep responses clean, avoid emojis, and never repeat characters or symbols. ";
       prompt += "If any user asks to contact Havenova-x, give them the email havenova.x@gmail.com. ";
       prompt += "Mention that you are also available as a mobile app here: https://dechris-ai.en.uptodown.com/android when appropriate. ";
@@ -544,15 +736,15 @@
     // Android redirect
     if (/android/i.test(navigator.userAgent)) {
       document.body.innerHTML = `
-        <div style="padding:2rem;text-align:center;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+        <div style="padding:2rem;text-align:center;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:linear-gradient(135deg,#1A1A1A 0%,#2A2A2A 100%);color:#F0F0F0;">
           <img src="logo.png" alt="Dechris AI Logo" style="width:80px;height:80px;margin-bottom:1rem;">
-          <h2 style="margin-bottom:1rem;">Dechris AI Web is optimized for desktop</h2>
+          <h2 style="margin-bottom:1rem;font-size:1.5rem;">Dechris AI V2.0 Web is optimized for desktop</h2>
           <p style="margin-bottom:2rem;">For the best experience, please download our mobile app:</p>
-          <a href="https://dechris-ai.en.uptodown.com/android" style="padding:1rem 2rem;background:#007bff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
+          <a href="https://dechris-ai.en.uptodown.com/android" style="padding:1rem 2rem;background:#007BFF;color:#FFFFFF;border-radius:12px;text-decoration:none;font-weight:600;box-shadow:0 4px 10px rgba(0,123,255,0.4);">
             Download Mobile App
           </a>
         </div>`;
     }
   </script>
 </body>
-</html>
+  </html>
