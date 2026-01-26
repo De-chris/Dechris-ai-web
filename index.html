@@ -2,866 +2,347 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dechris AI Web</title>
-  <link rel="icon" href="logo.png" type="image/png">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Dechris AI</title>
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#121212">
-  <link rel="manifest" href="data:application/manifest+json,{
-    &quot;name&quot;:&quot;Dechris AI Web&quot;,
-    &quot;short_name&quot;:&quot;Dechris AI&quot;,
-    &quot;start_url&quot;:&quot;.&quot;,
-    &quot;display&quot;:&quot;standalone&quot;,
-    &quot;background_color&quot;:&quot;#121212&quot;,
-    &quot;theme_color&quot;:&quot;#121212&quot;,
-    &quot;orientation&quot;:&quot;portrait-primary&quot;,
-    &quot;icons&quot;:[
-      {&quot;src&quot;:&quot;logo.png&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/png&quot;},
-      {&quot;src&quot;:&quot;logo.png&quot;,&quot;sizes&quot;:&quot;512x512&quot;,&quot;type&quot;:&quot;image/png&quot;}
-    ]
-  }">
+  <link rel="apple-touch-icon" href="logo.png">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
+    :root {
+      --bg: #121212;
+      --surface: #212121;
+      --accent: #007BFF;
+      --text: #F0F0F0;
+      --text-dim: #BBBBBB;
+      --glass: rgba(33, 33, 33, 0.8);
     }
 
-    body {
-      background: #121212;
-      color: #F0F0F0;
-      overflow-x: hidden;
-      overflow-y: auto;
-      transition: all 0.3s ease;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background-color: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
 
-    body.no-scroll {
-      overflow: hidden;
-    }
-
-    .user {
-      background: #007BFF !important;
-      color: #FFFFFF;
-      border-radius: 16px 4px 16px 16px;
-      align-self: flex-end;
-    }
-
-    .ai {
-      background: #212121;
-      color: #F0F0F0;
-      border-radius: 4px 16px 16px 16px;
-      align-self: flex-start;
-    }
-
-    #drawer {
-      position: fixed;
-      top: 0;
-      left: -300px;
-      width: 280px;
-      height: 100vh;
-      background: rgba(18, 18, 18, 0.95);
-      backdrop-filter: blur(10px);
-      color: #F0F0F0;
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-      z-index: 1000;
-      transition: left 0.3s ease;
-      box-shadow: 2px 0 15px rgba(0, 0, 0, 0.5);
-    }
-
-    #drawer.open {
-      left: 0;
-    }
-
-    #drawer .chat-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #4DA6FF;
-      margin: 0.5rem 0;
-      text-align: center;
-    }
-
-    #drawer .chat-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    #drawer .chat-item {
-      background: #212121;
-      color: #F0F0F0;
-      border: none;
-      padding: 0.6rem;
-      border-radius: 8px;
-      cursor: pointer;
-      text-align: left;
-      font-size: 0.9rem;
-      transition: background 0.2s, transform 0.2s;
-    }
-
-    #drawer .chat-item:hover {
-      background: #333333;
-      transform: translateX(5px);
-    }
-
-    #drawer .chat-item.active {
-      background: #007BFF;
-    }
-
-    #drawer button, #drawer a {
-      background: #212121;
-      color: #F0F0F0;
-      border: none;
-      padding: 0.8rem;
-      border-radius: 8px;
-      cursor: pointer;
-      text-align: left;
-      font-size: 0.95rem;
-      transition: background 0.2s, transform 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    #drawer button:hover, #drawer a:hover {
-      background: #333333;
-      transform: translateX(5px);
-    }
-
-    #drawer a {
-      text-decoration: none;
-    }
-
-    #drawer hr {
-      border: none;
-      border-top: 1px solid #333333;
-      margin: 0.5rem 0;
-    }
-
-    #drawerToggle {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      background: rgba(18, 18, 18, 0.8);
-      backdrop-filter: blur(5px);
-      color: #F0F0F0;
-      border: none;
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 1001;
-      transition: background 0.2s, transform 0.2s;
-      font-size: 1.2rem;
-    }
-
-    #drawerToggle:hover {
-      background: rgba(33, 33, 33, 0.9);
-      transform: scale(1.1);
-    }
-
-    #drawerToggle.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
+    /* Futuristic Splash */
     #splash {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #121212 0%, #212121 100%);
-      color: #4DA6FF;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.5rem;
-      font-weight: 700;
-      animation: futuristicFade 3s ease-out forwards;
-      z-index: 999;
-      text-shadow: 0 0 10px #4DA6FF;
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity 0.8s ease;
+    }
+    .loader-ring {
+      width: 100px; height: 100px; border-radius: 50%;
+      border: 2px solid transparent; border-top-color: var(--accent);
+      animation: spin 1s linear infinite; position: absolute;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #splash img { width: 80px; filter: drop-shadow(0 0 15px var(--accent)); z-index: 2; }
+
+    /* App Layout */
+    .app-container { display: flex; height: 100vh; width: 100vw; position: relative; }
+
+    /* Drawer - Futuristic Glass */
+    #drawer {
+      width: 300px; height: 100%; background: var(--surface);
+      border-right: 1px solid rgba(255,255,255,0.05);
+      display: flex; flex-direction: column; padding: 20px;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+    }
+    @media (max-width: 768px) {
+      #drawer { position: absolute; left: 0; transform: translateX(-100%); }
+      #drawer.open { transform: translateX(0); }
     }
 
-    #splash img {
-      width: 120px;
-      height: 120px;
-      margin-bottom: 1rem;
-      animation: neonPulse 1.5s infinite ease-in-out;
-      filter: drop-shadow(0 0 10px #007BFF);
+    .chat-item {
+      padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.03);
+      margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between;
+      align-items: center; border: 1px solid transparent; transition: 0.3s;
+    }
+    .chat-item.active { border-color: var(--accent); background: rgba(0, 123, 255, 0.1); }
+    .chat-item:hover { background: rgba(255,255,255,0.08); }
+
+    /* Main Chat Area */
+    .main-chat {
+      flex: 1; display: flex; flex-direction: column;
+      position: relative; background: radial-gradient(circle at top right, #1a1a1a, #121212);
     }
 
-    #splash small {
-      font-size: 0.6rem;
-      color: #4DA6FF;
-      text-shadow: 0 0 5px #007BFF;
+    header {
+      padding: 15px 20px; display: flex; align-items: center; gap: 15px;
+      background: var(--glass); backdrop-filter: blur(10px); z-index: 10;
     }
-
-    @keyframes futuristicFade {
-      0% { opacity: 1; transform: scale(1); filter: blur(0); }
-      50% { opacity: 0.8; transform: scale(1.05); filter: blur(2px); }
-      100% { opacity: 0; transform: scale(1.1); filter: blur(5px); }
-    }
-
-    @keyframes neonPulse {
-      0%, 100% { transform: scale(1); opacity: 1; filter: brightness(1); }
-      50% { transform: scale(1.05); opacity: 0.9; filter: brightness(1.2); }
-    }
-
-    .main {
-      padding: 1.5rem;
-      max-width: 900px;
-      margin: 0 auto;
-      padding-top: 5rem;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    .menu-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
 
     #chatBox {
-      flex: 1;
-      margin-top: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      padding-bottom: 5rem;
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 15px;
+      scrollbar-width: thin; scrollbar-color: var(--accent) transparent;
     }
 
-    .chat-msg {
-      padding: 1rem;
-      max-width: 80%;
-      word-wrap: break-word;
-      line-height: 1.6;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-      transition: transform 0.2s, box-shadow 0.2s;
-      animation: msgAppear 0.3s ease-out;
+    /* Bubbles */
+    .msg { max-width: 80%; padding: 12px 16px; border-radius: 18px; line-height: 1.5; font-size: 0.95rem; position: relative; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .msg.user { align-self: flex-end; background: var(--accent); color: white; border-bottom-right-radius: 4px; }
+    .msg.ai { align-self: flex-start; background: var(--surface); color: var(--text); border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+
+    /* Input Section (The Futuristic Logic) */
+    .input-wrapper {
+      padding: 20px; background: transparent;
+    }
+    .input-container {
+      background: var(--surface); border-radius: 24px; padding: 8px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .input-row { display: flex; align-items: center; gap: 10px; }
+    
+    #userInput {
+      flex: 1; background: transparent; border: none; color: white;
+      padding: 10px; font-size: 1rem; outline: none; resize: none; max-height: 150px;
     }
 
-    .chat-msg:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(0, 123, 255, 0.2);
+    .send-btn {
+      width: 45px; height: 45px; border-radius: 50%; background: var(--accent);
+      border: none; color: white; cursor: pointer; transition: 0.3s;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
     }
+    .send-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+    .send-btn:disabled { background: #444; cursor: not-allowed; }
 
-    @keyframes msgAppear {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    /* Mode Selection Button */
+    .mode-tag {
+      align-self: flex-start; background: var(--bg); color: var(--text-dim);
+      padding: 4px 12px; border-radius: 12px; font-size: 0.7rem;
+      cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; gap: 5px; transition: 0.3s;
     }
+    .mode-tag.active { border-color: var(--accent); color: var(--accent); background: rgba(0, 123, 255, 0.05); }
 
-    #inputBox {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-top: 1.5rem;
-      position: sticky;
-      bottom: 1rem;
-      background: #212121;
-      backdrop-filter: blur(10px);
-      padding: 0.8rem;
-      border-radius: 24px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-      max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
+    /* Welcome Screen */
+    #welcome {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center; padding: 20px;
     }
-
-    #inputBox textarea {
-      flex: 1;
-      padding: 0.8rem;
-      border-radius: 12px;
-      border: none;
-      background: transparent;
-      color: #F0F0F0;
-      max-height: 8em;
-      resize: vertical;
-      overflow-y: auto;
-      line-height: 1.5;
-      font-size: 0.95rem;
-      outline: none;
-    }
-
-    #inputBox textarea::placeholder {
-      color: #AAAAAA;
-    }
-
-    #inputBox #modeSelector {
-      background: #121212;
-      color: #F0F0F0;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 16px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: background 0.2s;
-    }
-
-    #inputBox #modeSelector:hover {
-      background: #333333;
-    }
-
-    #inputBox button {
-      border: none;
-      background: #007BFF;
-      color: #FFFFFF;
-      border-radius: 50%;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.2s;
-      width: 48px;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.4);
-    }
-
-    #inputBox button:hover {
-      background: #005BC4;
-      transform: scale(1.1);
-    }
-
-    .app-promo {
-      background: rgba(0, 123, 255, 0.15);
-      border-radius: 12px;
-      padding: 1rem;
-      margin: 1rem 0;
-      text-align: center;
-      position: relative;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .app-promo a {
-      color: #007BFF;
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .app-promo .cancel-btn {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      background: none;
-      border: none;
-      color: #007BFF;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    .hidden { display: none; }
-
-    @media (max-width: 768px) {
-      #drawer {
-        width: 80vw;
-        left: -80vw;
-      }
-
-      #drawer.open {
-        left: 0;
-      }
-
-      .main {
-        padding: 1rem;
-        padding-top: 4rem;
-        max-width: 100%;
-      }
-
-      .chat-msg {
-        max-width: 90%;
-        font-size: 0.9rem;
-      }
-
-      #inputBox {
-        padding: 0.6rem;
-        max-width: 100%;
-      }
-
-      #inputBox textarea {
-        font-size: 0.9rem;
-      }
-
-      #splash {
-        font-size: 1.8rem;
-      }
-
-      #splash img {
-        width: 100px;
-        height: 100px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      #inputBox {
-        flex-direction: column;
-      }
-
-      #inputBox textarea {
-        width: 100%;
-        margin-bottom: 0.5rem;
-      }
-
-      #inputBox button {
-        width: 100%;
-        border-radius: 12px;
-        height: 40px;
-      }
-    }
+    #welcome h2 { font-family: 'Orbitron', sans-serif; margin-top: 15px; font-size: 1.5rem; letter-spacing: 2px; }
   </style>
 </head>
 <body>
+
   <div id="splash">
-    <img src="logo.png" alt="Dechris AI Logo">
-    <div>Dechris AI Web</div>
-    <small>Futuristic AI Assistant</small>
+    <div class="loader-ring"></div>
+    <img src="logo.png" alt="Logo">
+    <p style="margin-top: 20px; font-family: 'Orbitron'; letter-spacing: 3px;">DECHRIS AI</p>
   </div>
-  <button id="drawerToggle" aria-label="Toggle Menu"><i class="fas fa-bars"></i></button>
-  <div id="drawer">
-    <div class="chat-title">Dechris AI Chats</div>
-    <div class="chat-list" id="chatList"></div>
-    <button onclick="createNewChat()"><i class="fas fa-plus"></i> New Chat</button>
-    <hr>
-    <button onclick="toggleVoice()"><i class="fas fa-microphone"></i> Toggle Voice: <span id="voiceStatus">ON</span></button>
-    <button onclick="changeName()"><i class="fas fa-user-edit"></i> Change Your Name</button>
-    <button onclick="exportChat()"><i class="fas fa-download"></i> Export Chat</button>
-    <button onclick="clearChats()"><i class="fas fa-trash"></i> Clear All Chats</button>
-    <hr>
-    <a href="https://dechris-ai.en.uptodown.com/android" target="_blank"><i class="fas fa-mobile-alt"></i> Download Mobile App</a>
-    <a href="mailto:havenova.x@gmail.com" target="_blank"><i class="fas fa-envelope"></i> Contact Havenova-x</a>
-    <hr>
-    <small style="color:#AAAAAA;font-size:0.8rem;text-align:center">Dechris AI Web</small>
+
+  <div class="app-container">
+    <aside id="drawer">
+      <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: var(--accent);">CHATS</h3>
+      <div id="chatList" style="flex: 1; overflow-y: auto;"></div>
+      
+      <button onclick="createNewChat()" class="chat-item" style="justify-content: center; background: var(--accent); color: white;">
+        <i class="fas fa-plus"></i> &nbsp; New Mission
+      </button>
+      
+      <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-dim); text-align: center;">
+        Developed by Havenova-X
+      </div>
+    </aside>
+
+    <main class="main-chat">
+      <header>
+        <button class="menu-btn" onclick="toggleDrawer()"><i class="fas fa-bars"></i></button>
+        <div style="font-family: 'Orbitron'; font-size: 0.9rem;">DECHRIS <span style="color: var(--accent);">WEB</span></div>
+      </header>
+
+      <div id="chatBox">
+        <div id="welcome">
+          <img src="logo.png" width="100" style="opacity: 0.5;">
+          <h2 id="greet">Initializing...</h2>
+          <p style="color: var(--text-dim); margin-top: 10px;">Select a mode and start a conversation.</p>
+        </div>
+      </div>
+
+      <div class="input-wrapper">
+        <div class="input-container">
+          <div class="input-row">
+            <textarea id="userInput" placeholder="Type a message..." rows="1"></textarea>
+            <button id="sendBtn" class="send-btn" onclick="sendMessage()">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+          <div class="input-row">
+            <div id="deepThinkToggle" class="mode-tag" onclick="toggleDeepThink()">
+              <i class="fas fa-microchip"></i> DeepThink Mode: <span id="dtStatus">OFF</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
-  <div class="main hidden">
-    <div id="chatBox"></div>
-    <div class="app-promo hidden">
-      Enjoying Dechris AI? Get the full experience with our <a href="https://dechris-ai.en.uptodown.com/android" target="_blank">mobile app</a>!
-      <button class="cancel-btn" onclick="hidePromo()" aria-label="Close Promo">Close</button>
-    </div>
-    <div id="inputBox">
-      <textarea id="userInput" placeholder="Ask something..." maxlength="6000" onkeypress="handleKeyPress(event)" aria-label="Chat Input"></textarea>
-      <button id="modeSelector" onclick="showModePopup()">ChatBot💬</button>
-      <button onclick="sendMessage()" aria-label="Send Message"><i class="fas fa-paper-plane"></i></button>
-    </div>
-  </div>
+
   <script>
-    let voiceEnabled = true;
-    let username = localStorage.getItem("dechris_username") || prompt("What's your name?") || "User";
-    localStorage.setItem("dechris_username", username);
-    let currentChatId = localStorage.getItem("dechris_current_chat") || 0;
-    let chats = JSON.parse(localStorage.getItem("dechris_chats") || "{}");
-    let chatTitles = JSON.parse(localStorage.getItem("chat_titles") || "[]");
-    if (chatTitles.length === 0) {
-      chatTitles.push("Chat 1");
-      localStorage.setItem("chat_titles", JSON.stringify(chatTitles));
-      chats[0] = { messages: [], memory: [] };
-      localStorage.setItem("dechris_chats", JSON.stringify(chats));
-    }
-    let deepThinkUsedToday = parseInt(localStorage.getItem("deepthink_used") || "0");
-    let lastReset = parseInt(localStorage.getItem("last_reset") || "0");
-    let todayStart = new Date().setHours(0,0,0,0);
-    if (lastReset < todayStart) {
-      deepThinkUsedToday = 0;
-      localStorage.setItem("deepthink_used", "0");
-      localStorage.setItem("last_reset", todayStart.toString());
-    }
-    let isDeepThink = localStorage.getItem("deepthink_mode") === "true";
-    document.getElementById("modeSelector").textContent = isDeepThink ? "DeepThink🧠" : "ChatBot💬";
-    let lcCounter = parseInt(localStorage.getItem("lc_counter") || "0");
+    // --- APP STATE ---
+    let chats = JSON.parse(localStorage.getItem('dechris_chats') || '{}');
+    let currentChatId = localStorage.getItem('dechris_active_chat') || '';
+    let isDeepThink = false;
+    let username = localStorage.getItem('username') || 'User';
+    let lcCounter = 0;
 
-    const splash = document.getElementById("splash");
-    const main = document.querySelector(".main");
-    const chatBox = document.getElementById("chatBox");
-    const voiceStatus = document.getElementById("voiceStatus");
-    const drawer = document.getElementById("drawer");
-    const drawerToggle = document.getElementById("drawerToggle");
-    const userInput = document.getElementById("userInput");
-    const appPromo = document.querySelector(".app-promo");
-    const chatList = document.getElementById("chatList");
+    // --- INITIALIZATION ---
+    window.onload = () => {
+      // Logic for greeting based on time (from your Java code)
+      const hour = new Date().getHours();
+      let greetText = "Hello";
+      if (hour >= 5 && hour < 12) greetText = "Good morning";
+      else if (hour >= 12 && hour < 17) greetText = "Good afternoon";
+      else if (hour >= 17 && hour < 21) greetText = "Good evening";
+      document.getElementById('greet').innerText = `${greetText}, ${username}`;
 
-    setTimeout(() => {
-      splash.style.display = "none";
-      main.classList.remove("hidden");
-      loadChatDisplay();
-      updateChatList();
-      showPromo();
-    }, 3000);
+      setTimeout(() => {
+        document.getElementById('splash').style.opacity = '0';
+        setTimeout(() => document.getElementById('splash').remove(), 800);
+      }, 2500);
 
-    document.body.classList.add("dark-mode"); // Locked dark mode
+      renderChatList();
+      if(currentChatId) loadChat(currentChatId);
+    };
 
-    drawerToggle.addEventListener("click", () => {
-      drawer.classList.toggle("open");
-      document.body.classList.toggle("no-scroll");
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!drawer.contains(e.target) && !drawerToggle.contains(e.target) && drawer.classList.contains("open")) {
-        drawer.classList.remove("open");
-        document.body.classList.remove("no-scroll");
-      }
-    });
-
-    function closeDrawer() {
-      drawer.classList.remove("open");
-      document.body.classList.remove("no-scroll");
-    }
-
-    function changeName() {
-      const newName = prompt("Enter your new name:", username) || username;
-      if (newName !== username) {
-        username = newName;
-        localStorage.setItem("dechris_username", newName);
-        displayMsg(`System: Your name has been updated to ${username}`, 'ai');
-      }
-      closeDrawer();
-    }
-
-    function clearChats() {
-      if (confirm("Are you sure you want to clear all chat history?")) {
-        localStorage.removeItem("dechris_chats");
-        localStorage.removeItem("chat_titles");
-        chats = {};
-        chatTitles = [];
-        currentChatId = 0;
-        localStorage.setItem("dechris_current_chat", currentChatId);
-        chatBox.innerHTML = "";
-        updateChatList();
-        displayMsg("System: Chat history has been cleared", 'ai');
-      }
-      closeDrawer();
-    }
-
-    function exportChat() {
-      let chatText = `Dechris AI Chat History - Chat ${parseInt(currentChatId) + 1}\n\n`;
-      const messages = chatBox.querySelectorAll('.chat-msg');
-      messages.forEach(msg => {
-        const sender = msg.classList.contains('user') ? `${username}: ` : 'Dechris AI: ';
-        chatText += sender + msg.textContent + '\n\n';
-      });
-      const blob = new Blob([chatText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `DechrisAI-Chat-\( {parseInt(currentChatId) + 1}- \){new Date().toISOString().slice(0,10)}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-      displayMsg("System: Chat exported successfully", 'ai');
-      closeDrawer();
-    }
-
-    function toggleVoice() {
-      voiceEnabled = !voiceEnabled;
-      voiceStatus.textContent = voiceEnabled ? "ON" : "OFF";
-      if (!voiceEnabled && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      closeDrawer();
-    }
-
-    function showPromo() {
-      const lastDismissed = localStorage.getItem("dechris_promo_dismissed");
-      const now = Date.now();
-      const oneWeek = 7 * 24 * 60 * 60 * 1000;
-      if (!lastDismissed || (now - parseInt(lastDismissed) > oneWeek)) {
-        appPromo.classList.remove("hidden");
-      }
-    }
-
-    function hidePromo() {
-      appPromo.classList.add("hidden");
-      localStorage.setItem("dechris_promo_dismissed", Date.now());
+    // --- DRAWER LOGIC ---
+    function toggleDrawer() {
+      document.getElementById('drawer').classList.toggle('open');
     }
 
     function createNewChat() {
-      const newIndex = chatTitles.length;
-      chatTitles.push(`Chat ${newIndex + 1}`);
-      localStorage.setItem("chat_titles", JSON.stringify(chatTitles));
-      chats[newIndex] = { messages: [], memory: [] };
-      localStorage.setItem("dechris_chats", JSON.stringify(chats));
-      currentChatId = newIndex;
-      localStorage.setItem("dechris_current_chat", currentChatId);
-      chatBox.innerHTML = "";
-      updateChatList();
-      displayMsg(`System: Started new conversation: Chat ${newIndex + 1}`, 'ai');
-      closeDrawer();
+      const id = 'chat_' + Date.now();
+      chats[id] = { title: "New Chat", messages: [] };
+      saveAndRefresh();
+      loadChat(id);
+      if(window.innerWidth < 768) toggleDrawer();
     }
 
-    function switchChat(chatId) {
-      currentChatId = chatId;
-      localStorage.setItem("dechris_current_chat", currentChatId);
-      chatBox.innerHTML = chats[currentChatId]?.messages.join("") || "";
-      updateChatList();
-      chatBox.scrollTop = chatBox.scrollHeight;
-      closeDrawer();
-    }
-
-    function updateChatList() {
-      chatList.innerHTML = "";
-      chatTitles.forEach((title, id) => {
-        const button = document.createElement("button");
-        button.className = `chat-item ${id == currentChatId ? 'active' : ''}`;
-        button.textContent = title;
-        button.onclick = () => switchChat(id);
-        button.oncontextmenu = (e) => {
-          e.preventDefault();
-          showChatMenu(id);
-        };
-        chatList.appendChild(button);
+    function renderChatList() {
+      const container = document.getElementById('chatList');
+      container.innerHTML = '';
+      Object.keys(chats).forEach(id => {
+        const div = document.createElement('div');
+        div.className = `chat-item ${id === currentChatId ? 'active' : ''}`;
+        div.innerHTML = `<span><i class="far fa-comment"></i> ${chats[id].title}</span> 
+                         <i class="fas fa-trash" style="font-size: 0.7rem; opacity: 0.5;" onclick="deleteChat('${id}', event)"></i>`;
+        div.onclick = () => loadChat(id);
+        container.appendChild(div);
       });
     }
 
-    function showChatMenu(id) {
-      const options = ["Delete", "Rename", "Clear messages"];
-      const menu = document.createElement("div");
-      menu.style.position = "fixed";
-      menu.style.background = "#212121";
-      menu.style.padding = "1rem";
-      menu.style.borderRadius = "8px";
-      menu.style.boxShadow = "0 4px 10px rgba(0,0,0,0.5)";
-      menu.style.zIndex = 1002;
-      menu.style.left = "50%";
-      menu.style.top = "50%";
-      menu.style.transform = "translate(-50%, -50%)";
-      options.forEach(opt => {
-        const btn = document.createElement("button");
-        btn.textContent = opt;
-        btn.style.display = "block";
-        btn.style.width = "100%";
-        btn.style.background = "transparent";
-        btn.style.color = "#F0F0F0";
-        btn.style.border = "none";
-        btn.style.padding = "0.5rem";
-        btn.onclick = () => {
-          handleChatAction(id, opt);
-          document.body.removeChild(menu);
-        };
-        menu.appendChild(btn);
-      });
-      document.body.appendChild(menu);
+    function loadChat(id) {
+      currentChatId = id;
+      localStorage.setItem('dechris_active_chat', id);
+      document.getElementById('welcome').style.display = 'none';
+      const box = document.getElementById('chatBox');
+      box.innerHTML = '';
+      chats[id].messages.forEach(m => displayMessage(m.content, m.role));
+      renderChatList();
     }
 
-    function handleChatAction(id, action) {
-      if (action === "Delete") {
-        chatTitles.splice(id, 1);
+    function deleteChat(id, e) {
+      e.stopPropagation();
+      if(confirm("Delete this memory?")) {
         delete chats[id];
-        for (let i = id; i < chatTitles.length; i++) {
-          chats[i] = chats[i + 1];
-          delete chats[i + 1];
+        if(currentChatId === id) {
+          currentChatId = '';
+          document.getElementById('chatBox').innerHTML = '';
+          document.getElementById('welcome').style.display = 'flex';
         }
-        localStorage.setItem("chat_titles", JSON.stringify(chatTitles));
-        localStorage.setItem("dechris_chats", JSON.stringify(chats));
-        if (id === currentChatId) {
-          currentChatId = 0;
-          localStorage.setItem("dechris_current_chat", currentChatId);
-          loadChatDisplay();
-        }
-        updateChatList();
-      } else if (action === "Rename") {
-        const newTitle = prompt("New title:", chatTitles[id]);
-        if (newTitle) {
-          chatTitles[id] = newTitle;
-          localStorage.setItem("chat_titles", JSON.stringify(chatTitles));
-          updateChatList();
-        }
-      } else if (action === "Clear messages") {
-        chats[id].messages = [];
-        chats[id].memory = [];
-        localStorage.setItem("dechris_chats", JSON.stringify(chats));
-        if (id === currentChatId) chatBox.innerHTML = "";
+        saveAndRefresh();
       }
     }
 
-    function displayMsg(msg, sender) {
-      const bubble = document.createElement("div");
-      bubble.className = `chat-msg ${sender}`;
-      bubble.textContent = msg;
-      chatBox.appendChild(bubble);
-      chatBox.scrollTop = chatBox.scrollHeight;
-      if (!chats[currentChatId]) chats[currentChatId] = { messages: [], memory: [] };
-      chats[currentChatId].messages.push(bubble.outerHTML);
-      localStorage.setItem("dechris_chats", JSON.stringify(chats));
-      if (sender === 'ai' && voiceEnabled) speak(msg);
-    }
-
-    function saveToMemory(role, content) {
-      if (!chats[currentChatId]) chats[currentChatId] = { messages: [], memory: [] };
-      chats[currentChatId].memory.push({ role, content });
-      if (chats[currentChatId].memory.length > 20) {
-        chats[currentChatId].memory.shift();
-      }
-      localStorage.setItem("dechris_chats", JSON.stringify(chats));
-    }
-
-    function getMemory() {
-      return chats[currentChatId]?.memory || [];
-    }
-
-    function loadChatDisplay() {
-      if (!chats[currentChatId]) {
-        chats[currentChatId] = { messages: [], memory: [] };
-        localStorage.setItem("dechris_chats", JSON.stringify(chats));
-        displayMsg(`Hello ${username}! I'm Dechris AI Web, your intelligent assistant. You can ask me anything. Also, did you know we have a mobile app? Get it here: https://dechris-ai.en.uptodown.com/android`, 'ai');
-      } else {
-        chatBox.innerHTML = chats[currentChatId].messages.join("");
-      }
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function handleKeyPress(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    }
-
-    function showModePopup() {
-      const canDeep = deepThinkUsedToday < 5;
-      const popup = document.createElement("div");
-      popup.style.position = "fixed";
-      popup.style.bottom = "100px";
-      popup.style.left = "50%";
-      popup.style.transform = "translateX(-50%)";
-      popup.style.background = "#212121";
-      popup.style.padding = "1rem";
-      popup.style.borderRadius = "16px";
-      popup.style.boxShadow = "0 4px 10px rgba(0,0,0,0.5)";
-      popup.style.zIndex = 1002;
-      const btnChat = document.createElement("button");
-      btnChat.textContent = "ChatBot💬";
-      btnChat.style.display = "block";
-      btnChat.style.background = "transparent";
-      btnChat.style.color = "#F0F0F0";
-      btnChat.style.border = "none";
-      btnChat.style.padding = "0.5rem";
-      btnChat.onclick = () => {
-        isDeepThink = false;
-        localStorage.setItem("deepthink_mode", "false");
-        document.getElementById("modeSelector").textContent = "ChatBot💬";
-        document.body.removeChild(popup);
-      };
-      popup.appendChild(btnChat);
-      const btnDeep = document.createElement("button");
-      btnDeep.textContent = "DeepThink🧠";
-      btnDeep.style.display = "block";
-      btnDeep.style.background = "transparent";
-      btnDeep.style.color = canDeep ? "#F0F0F0" : "#AAAAAA";
-      btnDeep.style.border = "none";
-      btnDeep.style.padding = "0.5rem";
-      btnDeep.onclick = () => {
-        if (!canDeep) {
-          alert("DeepThink limit reached. 5 messages per day.");
-          return;
-        }
-        isDeepThink = true;
-        localStorage.setItem("deepthink_mode", "true");
-        document.getElementById("modeSelector").textContent = "DeepThink🧠";
-        document.body.removeChild(popup);
-      };
-      popup.appendChild(btnDeep);
-      const btnCancel = document.createElement("button");
-      btnCancel.textContent = "Cancel";
-      btnCancel.style.display = "block";
-      btnCancel.style.background = "transparent";
-      btnCancel.style.color = "#F0F0F0";
-      btnCancel.style.border = "none";
-      btnCancel.style.padding = "0.5rem";
-      btnCancel.onclick = () => document.body.removeChild(popup);
-      popup.appendChild(btnCancel);
-      document.body.appendChild(popup);
-    }
-
+    // --- CORE AI LOGIC (PORTED FROM JAVA) ---
     async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
-      if (text.length > 6000) {
-        displayMsg("System: Message exceeds 6000 characters. Please shorten it.", 'ai');
-        return;
-      }
-      displayMsg(text, 'user');
-      saveToMemory("user", text);
-      userInput.value = "";
+      const input = document.getElementById('userInput');
+      const text = input.value.trim();
+      if(!text || !currentChatId) return;
 
-      const typingBubble = document.createElement("div");
-      typingBubble.className = "chat-msg ai";
-      typingBubble.textContent = isDeepThink ? "AI is thinking" : "Typing";
-      chatBox.appendChild(typingBubble);
-      chatBox.scrollTop = chatBox.scrollHeight;
+      input.value = '';
+      displayMessage(text, 'user');
+      addToMemory('user', text);
 
-      const typingInterval = setInterval(() => {
-        let dots = (typingBubble.textContent.match(/•/g) || []).length + 1;
-        if (dots > 3) dots = 1;
-        typingBubble.textContent = (isDeepThink ? "AI is thinking" : "Typing") + "•".repeat(dots);
-      }, 500);
-
-      let prompt = [{role: "system", content: `You are Dechris AI created by Havenova-X. Address the user as ${username}. Current date and time: ${new Date().toLocaleString()}. Keep responses clean, HAVENOVA-X is HX and is founded and owned by Christian Chidera known popularly as Dechris, our website link is https://havenova-x.vercel.app and our email is Havenova.x@gmail.com and takes note you only mention all about Havenova-X when user asks for it, take note that only user real_dechris is the real Dechris.`}];
-      const mem = getMemory();
-      mem.forEach(msg => prompt.push(msg));
-      prompt.push({role: "user", content: text});
-
-      let reply;
+      // Typing Indicator
+      const typingId = displayMessage("Dechris is thinking...", 'ai typing');
+      
       try {
-        lcCounter = (lcCounter + 1) % 2;
-        localStorage.setItem("lc_counter", lcCounter);
-        const key = lcCounter === 0 ? "ak_1gX15h2Sd9sr4SP3gZ84C1KT3gg6R" : "ak_1oM1lq7G33vK9QK2Xu1dF3EL9kZ80";
-
-        if (isDeepThink) {
-          if (deepThinkUsedToday >= 5) {
-            reply = "DeepThink limit reached. Please use ChatBot mode.";
-          } else {
-            const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-              body: JSON.stringify({ model: "LongCat-Flash-Thinking", messages: prompt, max_tokens: 4096, temperature: 0.7, enable_thinking: true, thinking_budget: 1024 })
-            });
-            const data = await res.json();
-            reply = data.choices[0].message.content;
-            deepThinkUsedToday++;
-            localStorage.setItem("deepthink_used", deepThinkUsedToday);
-          }
-        } else {
-          const rand = Math.random() * 100;
-          let url, body;
-          if (rand < 50) {
-            url = "https://api.longcat.chat/openai/v1/chat/completions";
-            body = JSON.stringify({ model: "LongCat-Flash-Chat", messages: prompt, max_tokens: 2048, temperature: 0.7 });
-          } else if (rand < 80) {
-            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDwVM8b4K_VB9HDlqn-Y9z5Ehb6ZJq3FvY";
-            body = JSON.stringify({ contents: [{ parts: [{ text: prompt.map(m => `${m.role}: ${m.content}`).join("\n") }] }] });
-            const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
-            const data = await res.json();
-            reply = data.candidates[0].content.parts[0].text;
-            return;
-          } else {
-            url = "https://api.longcat.chat/openai/v1/chat/completions";
-            body = JSON.stringify({ model: "LongCat-Flash-Chat", messages: prompt, max_tokens: 2048 });
-          }
-          const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` }, body });
-          const data = await res.json();
-          reply = data.choices[0].message.content;
-        }
-      } catch (e) {
-        reply = "Sorry, I'm having trouble connecting. Please check your internet.";
+        const response = await fetchAI(text);
+        document.getElementById(typingId).remove();
+        displayMessage(response, 'ai');
+        addToMemory('assistant', response);
+      } catch (err) {
+        document.getElementById(typingId).innerText = "⚠️ Connection Lost. Check API keys.";
       }
-
-      clearInterval(typingInterval);
-      chatBox.removeChild(typingBubble);
-      displayMsg(reply, 'ai');
-      saveToMemory("assistant", reply);
     }
 
-    function speak(text) {
-      if ('speechSynthesis' in window && voiceEnabled) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.rate = 1.0;
-        u.pitch = 1.0;
-        window.speechSynthesis.speak(u);
+    async function fetchAI(userMsg) {
+      // Rotation logic from your Java code
+      const keys = ["ak_1gX15h2Sd9sr4SP3gZ84C1KT3gg6R", "ak_1oM1lq7G33vK9QK2Xu1dF3EL9kZ80"];
+      const key = keys[lcCounter];
+      lcCounter = (lcCounter + 1) % 2;
+
+      const memory = chats[currentChatId].messages.slice(-10); // Last 10 messages context
+      const sysPrompt = { role: "system", content: `You are Dechris AI by Havenova-X. User: ${username}. Site: https://havenova-x.vercel.app.` };
+      
+      const payload = {
+        model: isDeepThink ? "LongCat-Flash-Thinking" : "LongCat-Flash-Chat",
+        messages: [sysPrompt, ...memory],
+        max_tokens: 2048,
+        temperature: 0.7
+      };
+
+      const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      return data.choices[0].message.content;
+    }
+
+    // --- HELPERS ---
+    function displayMessage(text, role) {
+      const id = 'msg_' + Date.now();
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.id = id;
+      div.innerText = text;
+      document.getElementById('chatBox').appendChild(div);
+      const box = document.getElementById('chatBox');
+      box.scrollTop = box.scrollHeight;
+      return id;
+    }
+
+    function addToMemory(role, content) {
+      chats[currentChatId].messages.push({ role, content });
+      if(chats[currentChatId].messages.length === 1) {
+        chats[currentChatId].title = content.substring(0, 20) + "...";
       }
+      saveAndRefresh();
+    }
+
+    function toggleDeepThink() {
+      isDeepThink = !isDeepThink;
+      document.getElementById('dtStatus').innerText = isDeepThink ? "ON" : "OFF";
+      document.getElementById('deepThinkToggle').classList.toggle('active');
+    }
+
+    function saveAndRefresh() {
+      localStorage.setItem('dechris_chats', JSON.stringify(chats));
+      renderChatList();
+    }
+
+    function toggleDrawer() {
+        document.getElementById('drawer').classList.toggle('open');
     }
   </script>
 </body>
