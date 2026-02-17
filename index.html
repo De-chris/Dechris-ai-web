@@ -13,215 +13,239 @@
     
     <style>
         :root {
-            --bg: #0a0a0a;
-            --surface: #161616;
+            --bg: #0d0d0d;
+            --surface: #1a1a1a;
             --accent: #007BFF;
             --accent-glow: rgba(0, 123, 255, 0.4);
-            --text: #f5f5f5;
-            --text-dim: #888888;
-            --glass: rgba(22, 22, 22, 0.7);
+            --text: #F0F0F0;
+            --text-dim: #999999;
+            --glass: rgba(26, 26, 26, 0.9);
             --drawer-width: 300px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* Disable selection for security look */
+        /* Security: Prevent Selection */
         body { 
             background-color: var(--bg); 
             color: var(--text); 
             overflow: hidden; 
             height: 100vh; 
             display: flex; 
-            user-select: none;
+            flex-direction: column;
+            user-select: none; 
+            -webkit-user-select: none;
         }
 
-        /* --- NOTIFICATION POPUP --- */
-        #notif-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(8px);
-        }
-        .notif-card {
-            background: var(--surface); width: 90%; max-width: 400px; padding: 25px;
-            border-radius: 24px; border: 1px solid var(--accent); box-shadow: 0 0 30px var(--accent-glow);
-            text-align: center; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        /* --- SPLASH --- */
+        /* --- Animations --- */
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* --- Futuristic Splash --- */
         #splash {
             position: fixed; inset: 0; background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999; transition: opacity 0.8s ease;
+            z-index: 10000; transition: opacity 0.8s ease;
         }
         .loader-ring {
             width: 120px; height: 120px; border-radius: 50%;
-            border: 2px solid transparent; border-top-color: var(--accent);
+            border: 2px solid rgba(0, 123, 255, 0.1); border-top-color: var(--accent);
             animation: spin 1s linear infinite; position: absolute;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        #splash img { width: 70px; filter: drop-shadow(0 0 20px var(--accent)); z-index: 2; }
 
-        /* --- LAYOUT --- */
-        .app-container { display: flex; width: 100%; height: 100vh; position: relative; }
+        /* --- Notification Popup --- */
+        #notifPopup {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; background: var(--surface);
+            border: 1px solid var(--accent); border-radius: 15px; padding: 15px;
+            z-index: 10001; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            animation: fadeIn 0.5s ease;
+        }
 
-        /* DRAWER */
+        /* --- App Layout --- */
+        .app-container { display: flex; height: 100vh; width: 100vw; position: relative; }
+
+        /* Drawer */
         #drawer {
             width: var(--drawer-width); height: 100%; background: var(--surface);
             border-right: 1px solid rgba(255,255,255,0.05);
             display: flex; flex-direction: column; padding: 20px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 2000;
         }
-
-        #drawer-backdrop {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; backdrop-filter: blur(4px);
-        }
+        
+        #drawer.closed { margin-left: calc(var(--drawer-width) * -1); }
 
         @media (max-width: 768px) {
-            #drawer { position: fixed; left: calc(-1 * var(--drawer-width)); }
-            #drawer.open { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
-            #drawer.open + #drawer-backdrop { display: block; }
+            #drawer { position: absolute; left: 0; }
+            #drawer.closed { transform: translateX(-100%); margin-left: 0; }
+            .drawer-overlay {
+                position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+                display: none; z-index: 1999;
+            }
+            .drawer-overlay.active { display: block; }
         }
 
+        .chat-list { flex: 1; overflow-y: auto; margin: 20px 0; }
         .chat-item {
-            padding: 14px; border-radius: 15px; background: rgba(255,255,255,0.03);
+            padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.03);
             margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between;
             align-items: center; border: 1px solid transparent; transition: 0.2s;
         }
-        .chat-item.active { border-color: var(--accent); background: rgba(0, 123, 255, 0.15); box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.1); }
+        .chat-item.active { border-color: var(--accent); background: rgba(0, 123, 255, 0.15); }
+        .chat-item:hover { background: rgba(255,255,255,0.08); }
 
-        /* MAIN */
-        .main-chat { flex: 1; display: flex; flex-direction: column; background: radial-gradient(circle at 50% 0%, #1a1a1a, #0a0a0a); }
-        
+        /* Main Chat Area */
+        .main-chat {
+            flex: 1; display: flex; flex-direction: column;
+            background: radial-gradient(circle at top right, #1a1a1a, #0d0d0d);
+            position: relative;
+        }
+
         header {
-            padding: 15px 25px; display: flex; align-items: center; justify-content: space-between;
+            padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;
             background: var(--glass); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
-        #chatBox {
+        .chat-box {
             flex: 1; overflow-y: auto; padding: 20px;
             display: flex; flex-direction: column; gap: 20px;
             scroll-behavior: smooth;
         }
 
-        /* MESSAGE BUBBLES */
-        .msg { max-width: 85%; padding: 14px 18px; border-radius: 20px; font-size: 0.95rem; animation: msgSlide 0.3s ease-out; position: relative; word-wrap: break-word; }
-        @keyframes msgSlide { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        
+        /* Message Bubbles */
+        .msg { 
+            max-width: 85%; padding: 14px 18px; border-radius: 20px; 
+            line-height: 1.6; font-size: 0.95rem; position: relative;
+            animation: fadeIn 0.4s ease; word-wrap: break-word;
+        }
         .msg.user { align-self: flex-end; background: var(--accent); color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 15px var(--accent-glow); }
-        .msg.ai { align-self: flex-start; background: var(--surface); border: 1px solid rgba(255,255,255,0.08); border-bottom-left-radius: 4px; }
-
-        /* INPUT AREA */
-        .input-wrapper { padding: 20px; max-width: 900px; width: 100%; margin: 0 auto; }
-        .input-container {
-            background: var(--surface); border-radius: 28px; padding: 10px 18px;
-            display: flex; align-items: center; gap: 12px; border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
+        .msg.ai { align-self: flex-start; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 4px; }
         
-        textarea {
+        .typing { font-style: italic; color: var(--accent); animation: pulse 1.5s infinite; }
+
+        /* Input Bar */
+        .input-area { padding: 20px; max-width: 900px; margin: 0 auto; width: 100%; }
+        .input-card {
+            background: var(--surface); border-radius: 25px; padding: 10px 15px;
+            border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: flex-end; gap: 10px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+        }
+        #userInput {
             flex: 1; background: transparent; border: none; color: white;
-            padding: 8px 0; font-size: 1rem; outline: none; resize: none; max-height: 150px;
+            padding: 10px; font-size: 1rem; outline: none; resize: none;
+            max-height: 150px; min-height: 24px;
         }
-
         .action-btn {
-            width: 42px; height: 42px; border-radius: 50%; border: none; 
-            background: var(--accent); color: white; cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center;
+            width: 45px; height: 45px; border-radius: 50%; border: none;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: 0.3s; background: transparent; color: var(--text-dim);
         }
-        .action-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--accent); }
+        .send-btn { background: var(--accent); color: white; }
+        .send-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--accent); }
 
-        /* UI STUFF */
-        .close-drawer { display: none; margin-bottom: 20px; text-align: right; font-size: 1.5rem; }
-        @media (max-width: 768px) { .close-drawer { display: block; } }
+        .dt-badge {
+            font-size: 0.7rem; padding: 3px 10px; border-radius: 10px;
+            background: rgba(255,255,255,0.05); color: var(--text-dim);
+            cursor: pointer; margin-top: 5px; display: inline-block; border: 1px solid transparent;
+        }
+        .dt-badge.active { border-color: var(--accent); color: var(--accent); background: rgba(0, 123, 255, 0.1); }
 
-        .tag { font-size: 10px; font-family: 'Orbitron'; background: var(--accent); padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-    <div id="notif-overlay">
-        <div class="notif-card">
-            <i class="fas fa-satellite-dish" style="color: var(--accent); font-size: 2rem; margin-bottom: 15px;"></i>
-            <h3 style="font-family: 'Orbitron'; margin-bottom: 10px;">SYSTEM UPDATE</h3>
-            <p id="notif-text" style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 20px;"></p>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
-                <input type="checkbox" id="dontShow"> <label for="dontShow" style="font-size: 0.8rem;">Don't show again</label>
-            </div>
-            <button onclick="closeNotif()" class="action-btn" style="width: 100%; border-radius: 12px; font-weight: bold;">ACKNOWLEDGE</button>
+    <div id="notifPopup">
+        <h4 style="font-family: Orbitron; color: var(--accent); margin-bottom: 10px;">MISSION UPDATE</h4>
+        <p id="notifText" style="font-size: 0.9rem; margin-bottom: 15px;"></p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="font-size: 0.75rem; color: var(--text-dim);">
+                <input type="checkbox" id="dontShowNotif"> Don't show again
+            </label>
+            <button onclick="closeNotif()" style="background: var(--accent); border: none; color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Acknowledge</button>
         </div>
     </div>
 
     <div id="splash">
         <div class="loader-ring"></div>
-        <img src="logo.png" alt="Logo" width="80">
-        <p style="margin-top: 25px; font-family: 'Orbitron'; letter-spacing: 4px; color: var(--accent);">DECHRIS AI</p>
+        <img src="logo.png" alt="Dechris AI">
+        <h2 style="margin-top: 25px; font-family: 'Orbitron'; letter-spacing: 5px; font-size: 1.2rem; color: var(--accent);">DECHRIS AI</h2>
+        <p style="font-size: 0.7rem; opacity: 0.5; margin-top: 10px;">SECURE INTERFACE INITIALIZING...</p>
     </div>
 
+    <div class="drawer-overlay" onclick="toggleDrawer()"></div>
+
     <div class="app-container">
-        <div id="drawer-backdrop" onclick="toggleDrawer()"></div>
-        <aside id="drawer">
-            <div class="close-drawer" onclick="toggleDrawer()"><i class="fas fa-times"></i></div>
-            <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: var(--accent); font-size: 1rem;">MISSION LOGS</h3>
-            <div id="chatList" style="flex: 1; overflow-y: auto;"></div>
+        <aside id="drawer" class="closed">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-family: 'Orbitron'; color: var(--accent); font-size: 1rem;">TERMINAL</h3>
+                <button onclick="toggleDrawer()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
             
-            <button onclick="createNewChat()" class="chat-item" style="justify-content: center; background: var(--accent); color: white; font-weight: bold;">
+            <div class="chat-list" id="chatList"></div>
+            
+            <button onclick="createNewChat()" class="chat-item" style="justify-content: center; background: var(--accent); color: white; font-weight: 600;">
                 <i class="fas fa-plus-circle"></i> &nbsp; NEW MISSION
             </button>
-            <div style="margin-top: 15px; font-size: 0.7rem; color: var(--text-dim); text-align: center; letter-spacing: 1px;">
-                HAVENOVA-X CORE v2.0
+            
+            <div style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; font-size: 0.75rem;">
+                <p style="color: var(--text-dim);">System: <span style="color: #00ff00;">Operational</span></p>
+                <p style="color: var(--text-dim);">Encryption: <span style="color: #00ff00;">Active</span></p>
             </div>
         </aside>
 
         <main class="main-chat">
             <header>
                 <div style="display: flex; align-items: center; gap: 15px;">
-                    <button class="action-btn" style="background: transparent; border: 1px solid rgba(255,255,255,0.1);" onclick="toggleDrawer()">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div style="font-family: 'Orbitron'; font-size: 0.85rem; letter-spacing: 1px;">
-                        DECHRIS <span style="color: var(--accent);">AI WEB</span>
-                    </div>
+                    <button class="action-btn" onclick="toggleDrawer()" style="color: white; font-size: 1.2rem;"><i class="fas fa-bars"></i></button>
+                    <div style="font-family: 'Orbitron'; font-size: 0.85rem; letter-spacing: 1px;">DECHRIS <span style="color: var(--accent);">AI WEB</span></div>
                 </div>
-                <div id="status-dot" title="System Online" style="width: 10px; height: 10px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 10px #00ff88;"></div>
+                <img src="logo.png" width="30" style="opacity: 0.8;">
             </header>
 
-            <div id="chatBox">
-                <div id="welcome" style="margin: auto; text-align: center; max-width: 400px;">
-                    <img src="logo.png" width="80" style="filter: grayscale(1) opacity(0.2); margin-bottom: 20px;">
-                    <h2 id="greet" style="font-family: 'Orbitron'; font-size: 1.2rem; margin-bottom: 10px;">SECURE CONNECTION ESTABLISHED</h2>
-                    <p style="color: var(--text-dim); font-size: 0.85rem;">Dechris AI is ready to assist. All communications are encrypted.</p>
+            <div class="chat-box" id="chatBox">
+                <div id="welcomeScreen" style="margin: auto; text-align: center; max-width: 400px; animation: fadeIn 1s ease;">
+                    <img src="logo.png" width="80" style="opacity: 0.2; margin-bottom: 20px;">
+                    <h2 id="greet" style="font-family: 'Orbitron'; margin-bottom: 10px;">ACCESS GRANTED</h2>
+                    <p style="color: var(--text-dim); font-size: 0.9rem;">I am Dechris AI, your advanced technical companion. How shall we proceed today?</p>
                 </div>
             </div>
 
-            <div class="input-wrapper">
-                <div class="input-container">
-                    <textarea id="userInput" placeholder="Command Dechris AI..." rows="1" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea>
-                    <button id="sendBtn" class="action-btn" onclick="sendMessage()">
+            <div class="input-area">
+                <div id="dtToggle" class="dt-badge" onclick="toggleDeepThink()">
+                    <i class="fas fa-brain"></i> DeepThink: <span id="dtStatus">OFF</span>
+                </div>
+                <div class="input-card">
+                    <textarea id="userInput" placeholder="Message Dechris AI..." rows="1" oninput="autoResize(this)"></textarea>
+                    <button id="sendBtn" class="action-btn send-btn" onclick="handleSend()">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
+                <p style="text-align: center; font-size: 0.65rem; color: var(--text-dim); margin-top: 8px;">
+                    Powered by Havenova-X Protocol &bull; Secure Session
+                </p>
             </div>
         </main>
     </div>
 
     <script>
-        // --- SECURE STORAGE & STATE ---
-        const CONFIG = {
-            keys: ["ak_1gX15h2Sd9sr4SP3gZ84C1KT3gg6R", "ak_1oM1lq7G33vK9QK2Xu1dF3EL9kZ80"],
-            keyIdx: 0,
-            notifPath: '/notif.txt' // Ensure this is correct for your root
-        };
-
-        let chats = JSON.parse(localStorage.getItem('dech_v2_chats') || '{}');
-        let activeChatId = localStorage.getItem('dech_v2_active') || '';
-        let username = localStorage.getItem('username') || 'Agent';
+        // --- CONFIG & STATE ---
+        const API_KEYS = ["ak_1gX15h2Sd9sr4SP3gZ84C1KT3gg6R", "ak_1oM1lq7G33vK9QK2Xu1dF3EL9kZ80"];
+        let keyIdx = 0;
+        let chats = JSON.parse(localStorage.getItem('dechris_v2_chats') || '{}');
+        let activeChatId = localStorage.getItem('dechris_v2_active') || '';
+        let isDeepThink = false;
+        let userName = localStorage.getItem('username') || 'User';
 
         // --- CORE INITIALIZATION ---
         window.onload = () => {
-            setGreeting();
+            setupGreeting();
             checkNotifications();
             
-            // Auto-create chat if none exists (Requirement met)
+            // Auto-create chat if empty
             if (Object.keys(chats).length === 0) {
                 createNewChat();
             } else if (activeChatId && chats[activeChatId]) {
@@ -234,47 +258,45 @@
             }, 2000);
         };
 
-        function setGreeting() {
-            const hr = new Date().getHours();
-            let g = "Access Granted";
-            if (hr < 12) g = "Good Morning";
-            else if (hr < 17) g = "Good Afternoon";
-            else g = "Good Evening";
-            document.getElementById('greet').innerText = `${g}, ${username}`;
+        function setupGreeting() {
+            const hour = new Date().getHours();
+            let g = "Good evening";
+            if (hour < 12) g = "Good morning";
+            else if (hour < 17) g = "Good afternoon";
+            document.getElementById('greet').innerText = `${g}, ${userName}`;
         }
 
         // --- NOTIFICATION LOGIC ---
         async function checkNotifications() {
             if (localStorage.getItem('hide_notif') === 'true') return;
             try {
-                const res = await fetch(CONFIG.notifPath + '?t=' + Date.now());
+                const res = await fetch('notif.txt');
                 const text = await res.text();
-                const lastKnown = localStorage.getItem('last_notif_text');
-                
-                if (text.trim() && text !== lastKnown) {
-                    document.getElementById('notif-text').innerText = text;
-                    document.getElementById('notif-overlay').style.display = 'flex';
+                if (text.trim().length > 0) {
+                    document.getElementById('notifText').innerText = text;
+                    document.getElementById('notifPopup').style.display = 'block';
                 }
-            } catch (e) { console.log("Notif sync failed."); }
+            } catch (e) { console.log("Notif fetch failed"); }
         }
 
         function closeNotif() {
-            const text = document.getElementById('notif-text').innerText;
-            if (document.getElementById('dontShow').checked) {
+            if (document.getElementById('dontShowNotif').checked) {
                 localStorage.setItem('hide_notif', 'true');
-                localStorage.setItem('last_notif_text', text);
             }
-            document.getElementById('notif-overlay').style.display = 'none';
+            document.getElementById('notifPopup').style.display = 'none';
         }
 
-        // --- DRAWER & CHATS ---
+        // --- CHAT LOGIC ---
         function toggleDrawer() {
-            document.getElementById('drawer').classList.toggle('open');
+            const drawer = document.getElementById('drawer');
+            const overlay = document.querySelector('.drawer-overlay');
+            drawer.classList.toggle('closed');
+            overlay.classList.toggle('active');
         }
 
         function createNewChat() {
-            const id = 'mission_' + Date.now();
-            chats[id] = { title: "New Mission", messages: [], date: new Date().toLocaleString() };
+            const id = 'hx_' + Date.now();
+            chats[id] = { title: "New Mission", messages: [] };
             save();
             loadChat(id);
             if (window.innerWidth <= 768) toggleDrawer();
@@ -282,114 +304,125 @@
 
         function loadChat(id) {
             activeChatId = id;
-            localStorage.setItem('dech_v2_active', id);
-            document.getElementById('welcome').style.display = 'none';
+            localStorage.setItem('dechris_v2_active', id);
+            document.getElementById('welcomeScreen').style.display = 'none';
             const box = document.getElementById('chatBox');
             box.innerHTML = '';
-            chats[id].messages.forEach(m => renderMsg(m.content, m.role));
+            
+            chats[id].messages.forEach(m => appendMessage(m.role, m.content));
             renderList();
-            box.scrollTop = box.scrollHeight;
         }
 
         function renderList() {
             const list = document.getElementById('chatList');
             list.innerHTML = '';
             Object.keys(chats).reverse().forEach(id => {
-                const div = document.createElement('div');
-                div.className = `chat-item ${id === activeChatId ? 'active' : ''}`;
-                div.innerHTML = `<span style="font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                                    <i class="fas fa-terminal" style="font-size:0.7rem; color:var(--accent);"></i> ${chats[id].title}
-                                 </span>
-                                 <i class="fas fa-times" style="font-size:0.8rem; opacity:0.3;" onclick="deleteChat('${id}', event)"></i>`;
-                div.onclick = () => loadChat(id);
-                list.appendChild(div);
+                const item = document.createElement('div');
+                item.className = `chat-item ${id === activeChatId ? 'active' : ''}`;
+                item.innerHTML = `
+                    <span style="font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:80%;">
+                        <i class="far fa-comment-alt" style="margin-right:8px; opacity:0.6;"></i>${chats[id].title}
+                    </span>
+                    <i class="fas fa-trash-alt" style="font-size:0.7rem; opacity:0.3;" onclick="deleteChat('${id}', event)"></i>
+                `;
+                item.onclick = () => loadChat(id);
+                list.appendChild(item);
             });
         }
 
-        function deleteChat(id, e) {
-            e.stopPropagation();
-            if (confirm("Purge mission records?")) {
-                delete chats[id];
-                if (activeChatId === id) {
-                    activeChatId = '';
-                    document.getElementById('chatBox').innerHTML = '';
-                    document.getElementById('welcome').style.display = 'flex';
-                }
-                save();
-                renderList();
-                if (Object.keys(chats).length === 0) createNewChat();
-            }
-        }
-
-        // --- AI LOGIC (Integrated Prompt) ---
-        async function sendMessage() {
+        async function handleSend() {
             const input = document.getElementById('userInput');
             const val = input.value.trim();
             if (!val || !activeChatId) return;
 
             input.value = '';
-            input.style.height = '';
+            input.style.height = 'auto';
             
-            renderMsg(val, 'user');
-            chats[activeChatId].messages.push({ role: 'user', content: val });
+            // Add user msg
+            appendMessage('user', val);
+            chats[activeChatId].messages.push({role: 'user', content: val});
             
-            if (chats[activeChatId].messages.length === 1) {
+            if (chats[activeChatId].title === "New Mission") {
                 chats[activeChatId].title = val.substring(0, 25);
             }
 
-            const typingDiv = renderMsg("Decoding signal...", 'ai');
+            // AI placeholder
+            const aiMsgDiv = appendMessage('ai', '<span class="typing">Dechris is processing...</span>');
             
             try {
                 const response = await callAI(val);
-                typingDiv.innerText = response;
-                chats[activeChatId].messages.push({ role: 'assistant', content: response });
+                aiMsgDiv.innerHTML = response;
+                chats[activeChatId].messages.push({role: 'assistant', content: response});
                 save();
             } catch (err) {
-                typingDiv.innerText = "⚠️ UPLINK CRITICAL FAILURE. Retrying...";
+                aiMsgDiv.innerHTML = "⚠️ Uplink failed. Check system keys.";
             }
         }
 
-        async function callAI(text) {
-            const key = CONFIG.keys[CONFIG.keyIdx];
-            CONFIG.keyIdx = (CONFIG.keyIdx + 1) % CONFIG.keys.length;
+        async function callAI(query) {
+            const key = API_KEYS[keyIdx];
+            keyIdx = (keyIdx + 1) % API_KEYS.length;
 
-            const system = `You are Dechris AI created by the Havenova-x team lead by their founder Dechris, a helpful assistant. Keep responses clean, avoid emojis, and never repeat characters or symbols. If any user asks to contact Havenova-x, give them the email havenova.x@gmail.com. You are currently chatting with ${username}. Address the user as ${username}.`;
+            const history = chats[activeChatId].messages.slice(-10);
+            const systemPrompt = `You are Dechris AI created by the Havenova-x team lead by their founder Dechris, a helpful, calm and intelligent assistant. Keep responses clean, avoid emojis, and never repeat characters or symbols. If any user asks to contact Havenova-x, give them the email havenova.x@gmail.com. You are currently chatting with ${userName}.`;
 
-            // Memory limit of 10 to prevent breakage
-            const memory = chats[activeChatId].messages.slice(-10).map(m => ({
-                role: m.role, content: m.content
-            }));
+            const payload = {
+                model: isDeepThink ? "LongCat-Flash-Thinking" : "LongCat-Flash-Chat",
+                messages: [{role: "system", content: systemPrompt}, ...history],
+                temperature: 0.6
+            };
 
-            const response = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
+            const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-                body: JSON.stringify({
-                    model: "LongCat-Flash-Chat",
-                    messages: [{ role: "system", content: system }, ...memory],
-                    temperature: 0.6,
-                    max_tokens: 1500
-                })
+                body: JSON.stringify(payload)
             });
-
-            const data = await response.json();
+            const data = await res.json();
             return data.choices[0].message.content;
         }
 
-        function renderMsg(text, role) {
+        // --- UI HELPERS ---
+        function appendMessage(role, text) {
             const box = document.getElementById('chatBox');
             const div = document.createElement('div');
             div.className = `msg ${role}`;
-            div.innerText = text;
+            div.innerHTML = text;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
             return div;
         }
 
-        function save() {
-            localStorage.setItem('dech_v2_chats', JSON.stringify(chats));
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
         }
 
-        // --- SECURITY ---
+        function toggleDeepThink() {
+            isDeepThink = !isDeepThink;
+            document.getElementById('dtStatus').innerText = isDeepThink ? "ON" : "OFF";
+            document.getElementById('dtToggle').classList.toggle('active');
+        }
+
+        function deleteChat(id, e) {
+            e.stopPropagation();
+            if (confirm("Erase this memory session?")) {
+                delete chats[id];
+                if (activeChatId === id) {
+                    activeChatId = '';
+                    document.getElementById('chatBox').innerHTML = '';
+                    document.getElementById('welcomeScreen').style.display = 'block';
+                }
+                save();
+                renderList();
+            }
+        }
+
+        function save() {
+            localStorage.setItem('dechris_v2_chats', JSON.stringify(chats));
+            renderList();
+        }
+
+        // Security shortcuts block
         document.onkeydown = (e) => {
             if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
         };
