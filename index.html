@@ -1,349 +1,398 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Dechris AI</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#121212">
-  <link rel="apple-touch-icon" href="logo.png">
-  
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
-  <style>
-    :root {
-      --bg: #121212;
-      --surface: #212121;
-      --accent: #007BFF;
-      --text: #F0F0F0;
-      --text-dim: #BBBBBB;
-      --glass: rgba(33, 33, 33, 0.8);
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-    body { background-color: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-
-    /* Futuristic Splash */
-    #splash {
-      position: fixed; inset: 0; background: var(--bg);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 9999; transition: opacity 0.8s ease;
-    }
-    .loader-ring {
-      width: 100px; height: 100px; border-radius: 50%;
-      border: 2px solid transparent; border-top-color: var(--accent);
-      animation: spin 1s linear infinite; position: absolute;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #splash img { width: 80px; filter: drop-shadow(0 0 15px var(--accent)); z-index: 2; }
-
-    /* App Layout */
-    .app-container { display: flex; height: 100vh; width: 100vw; position: relative; }
-
-    /* Drawer - Futuristic Glass */
-    #drawer {
-      width: 300px; height: 100%; background: var(--surface);
-      border-right: 1px solid rgba(255,255,255,0.05);
-      display: flex; flex-direction: column; padding: 20px;
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 1000;
-    }
-    @media (max-width: 768px) {
-      #drawer { position: absolute; left: 0; transform: translateX(-100%); }
-      #drawer.open { transform: translateX(0); }
-    }
-
-    .chat-item {
-      padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.03);
-      margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between;
-      align-items: center; border: 1px solid transparent; transition: 0.3s;
-    }
-    .chat-item.active { border-color: var(--accent); background: rgba(0, 123, 255, 0.1); }
-    .chat-item:hover { background: rgba(255,255,255,0.08); }
-
-    /* Main Chat Area */
-    .main-chat {
-      flex: 1; display: flex; flex-direction: column;
-      position: relative; background: radial-gradient(circle at top right, #1a1a1a, #121212);
-    }
-
-    header {
-      padding: 15px 20px; display: flex; align-items: center; gap: 15px;
-      background: var(--glass); backdrop-filter: blur(10px); z-index: 10;
-    }
-    .menu-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
-
-    #chatBox {
-      flex: 1; overflow-y: auto; padding: 20px;
-      display: flex; flex-direction: column; gap: 15px;
-      scrollbar-width: thin; scrollbar-color: var(--accent) transparent;
-    }
-
-    /* Bubbles */
-    .msg { max-width: 80%; padding: 12px 16px; border-radius: 18px; line-height: 1.5; font-size: 0.95rem; position: relative; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Dechris AI Web | Havenova-X</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <link rel="apple-touch-icon" href="logo.png">
     
-    .msg.user { align-self: flex-end; background: var(--accent); color: white; border-bottom-right-radius: 4px; }
-    .msg.ai { align-self: flex-start; background: var(--surface); color: var(--text); border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
-
-    /* Input Section (The Futuristic Logic) */
-    .input-wrapper {
-      padding: 20px; background: transparent;
-    }
-    .input-container {
-      background: var(--surface); border-radius: 24px; padding: 8px 12px;
-      display: flex; flex-direction: column; gap: 8px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-    .input-row { display: flex; align-items: center; gap: 10px; }
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    #userInput {
-      flex: 1; background: transparent; border: none; color: white;
-      padding: 10px; font-size: 1rem; outline: none; resize: none; max-height: 150px;
-    }
-
-    .send-btn {
-      width: 45px; height: 45px; border-radius: 50%; background: var(--accent);
-      border: none; color: white; cursor: pointer; transition: 0.3s;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
-    }
-    .send-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
-    .send-btn:disabled { background: #444; cursor: not-allowed; }
-
-    /* Mode Selection Button */
-    .mode-tag {
-      align-self: flex-start; background: var(--bg); color: var(--text-dim);
-      padding: 4px 12px; border-radius: 12px; font-size: 0.7rem;
-      cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-      display: flex; align-items: center; gap: 5px; transition: 0.3s;
-    }
-    .mode-tag.active { border-color: var(--accent); color: var(--accent); background: rgba(0, 123, 255, 0.05); }
-
-    /* Welcome Screen */
-    #welcome {
-      position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; text-align: center; padding: 20px;
-    }
-    #welcome h2 { font-family: 'Orbitron', sans-serif; margin-top: 15px; font-size: 1.5rem; letter-spacing: 2px; }
-  </style>
-</head>
-<body>
-
-  <div id="splash">
-    <div class="loader-ring"></div>
-    <img src="logo.png" alt="Logo">
-    <p style="margin-top: 20px; font-family: 'Orbitron'; letter-spacing: 3px;">DECHRIS AI</p>
-  </div>
-
-  <div class="app-container">
-    <aside id="drawer">
-      <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: var(--accent);">CHATS</h3>
-      <div id="chatList" style="flex: 1; overflow-y: auto;"></div>
-      
-      <button onclick="createNewChat()" class="chat-item" style="justify-content: center; background: var(--accent); color: white;">
-        <i class="fas fa-plus"></i> &nbsp; New Mission
-      </button>
-      
-      <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-dim); text-align: center;">
-        Developed by Havenova-X
-      </div>
-    </aside>
-
-    <main class="main-chat">
-      <header>
-        <button class="menu-btn" onclick="toggleDrawer()"><i class="fas fa-bars"></i></button>
-        <div style="font-family: 'Orbitron'; font-size: 0.9rem;">DECHRIS <span style="color: var(--accent);">WEB</span></div>
-      </header>
-
-      <div id="chatBox">
-        <div id="welcome">
-          <img src="logo.png" width="100" style="opacity: 0.5;">
-          <h2 id="greet">Initializing...</h2>
-          <p style="color: var(--text-dim); margin-top: 10px;">Select a mode and start a conversation.</p>
-        </div>
-      </div>
-
-      <div class="input-wrapper">
-        <div class="input-container">
-          <div class="input-row">
-            <textarea id="userInput" placeholder="Type a message..." rows="1"></textarea>
-            <button id="sendBtn" class="send-btn" onclick="sendMessage()">
-              <i class="fas fa-paper-plane"></i>
-            </button>
-          </div>
-          <div class="input-row">
-            <div id="deepThinkToggle" class="mode-tag" onclick="toggleDeepThink()">
-              <i class="fas fa-microchip"></i> DeepThink Mode: <span id="dtStatus">OFF</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <script>
-    // --- APP STATE ---
-    let chats = JSON.parse(localStorage.getItem('dechris_chats') || '{}');
-    let currentChatId = localStorage.getItem('dechris_active_chat') || '';
-    let isDeepThink = false;
-    let username = localStorage.getItem('username') || 'User';
-    let lcCounter = 0;
-
-    // --- INITIALIZATION ---
-    window.onload = () => {
-      // Logic for greeting based on time (from your Java code)
-      const hour = new Date().getHours();
-      let greetText = "Hello";
-      if (hour >= 5 && hour < 12) greetText = "Good morning";
-      else if (hour >= 12 && hour < 17) greetText = "Good afternoon";
-      else if (hour >= 17 && hour < 21) greetText = "Good evening";
-      document.getElementById('greet').innerText = `${greetText}, ${username}`;
-
-      setTimeout(() => {
-        document.getElementById('splash').style.opacity = '0';
-        setTimeout(() => document.getElementById('splash').remove(), 800);
-      }, 2500);
-
-      renderChatList();
-      if(currentChatId) loadChat(currentChatId);
-    };
-
-    // --- DRAWER LOGIC ---
-    function toggleDrawer() {
-      document.getElementById('drawer').classList.toggle('open');
-    }
-
-    function createNewChat() {
-      const id = 'chat_' + Date.now();
-      chats[id] = { title: "New Chat", messages: [] };
-      saveAndRefresh();
-      loadChat(id);
-      if(window.innerWidth < 768) toggleDrawer();
-    }
-
-    function renderChatList() {
-      const container = document.getElementById('chatList');
-      container.innerHTML = '';
-      Object.keys(chats).forEach(id => {
-        const div = document.createElement('div');
-        div.className = `chat-item ${id === currentChatId ? 'active' : ''}`;
-        div.innerHTML = `<span><i class="far fa-comment"></i> ${chats[id].title}</span> 
-                         <i class="fas fa-trash" style="font-size: 0.7rem; opacity: 0.5;" onclick="deleteChat('${id}', event)"></i>`;
-        div.onclick = () => loadChat(id);
-        container.appendChild(div);
-      });
-    }
-
-    function loadChat(id) {
-      currentChatId = id;
-      localStorage.setItem('dechris_active_chat', id);
-      document.getElementById('welcome').style.display = 'none';
-      const box = document.getElementById('chatBox');
-      box.innerHTML = '';
-      chats[id].messages.forEach(m => displayMessage(m.content, m.role));
-      renderChatList();
-    }
-
-    function deleteChat(id, e) {
-      e.stopPropagation();
-      if(confirm("Delete this memory?")) {
-        delete chats[id];
-        if(currentChatId === id) {
-          currentChatId = '';
-          document.getElementById('chatBox').innerHTML = '';
-          document.getElementById('welcome').style.display = 'flex';
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #161616;
+            --accent: #007BFF;
+            --accent-glow: rgba(0, 123, 255, 0.4);
+            --text: #f5f5f5;
+            --text-dim: #888888;
+            --glass: rgba(22, 22, 22, 0.7);
+            --drawer-width: 300px;
         }
-        saveAndRefresh();
-      }
-    }
 
-    // --- CORE AI LOGIC (PORTED FROM JAVA) ---
-    async function sendMessage() {
-      const input = document.getElementById('userInput');
-      const text = input.value.trim();
-      if(!text || !currentChatId) return;
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* Disable selection for security look */
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            overflow: hidden; 
+            height: 100vh; 
+            display: flex; 
+            user-select: none;
+        }
 
-      input.value = '';
-      displayMessage(text, 'user');
-      addToMemory('user', text);
+        /* --- NOTIFICATION POPUP --- */
+        #notif-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(8px);
+        }
+        .notif-card {
+            background: var(--surface); width: 90%; max-width: 400px; padding: 25px;
+            border-radius: 24px; border: 1px solid var(--accent); box-shadow: 0 0 30px var(--accent-glow);
+            text-align: center; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        /* --- SPLASH --- */
+        #splash {
+            position: fixed; inset: 0; background: var(--bg);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.8s ease;
+        }
+        .loader-ring {
+            width: 120px; height: 120px; border-radius: 50%;
+            border: 2px solid transparent; border-top-color: var(--accent);
+            animation: spin 1s linear infinite; position: absolute;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-      // Typing Indicator
-      const typingId = displayMessage("Dechris is thinking...", 'ai typing');
-      
-      try {
-        const response = await fetchAI(text);
-        document.getElementById(typingId).remove();
-        displayMessage(response, 'ai');
-        addToMemory('assistant', response);
-      } catch (err) {
-        document.getElementById(typingId).innerText = "⚠️ Connection Lost. Check API keys.";
-      }
-    }
+        /* --- LAYOUT --- */
+        .app-container { display: flex; width: 100%; height: 100vh; position: relative; }
 
-    async function fetchAI(userMsg) {
-      // Rotation logic from your Java code
-      const keys = ["ak_1gX15h2Sd9sr4SP3gZ84C1KT3gg6R", "ak_1oM1lq7G33vK9QK2Xu1dF3EL9kZ80"];
-      const key = keys[lcCounter];
-      lcCounter = (lcCounter + 1) % 2;
+        /* DRAWER */
+        #drawer {
+            width: var(--drawer-width); height: 100%; background: var(--surface);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            display: flex; flex-direction: column; padding: 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
+        }
 
-      const memory = chats[currentChatId].messages.slice(-10); // Last 10 messages context
-      const sysPrompt = { role: "system", content: `You are Dechris AI by Havenova-X. User: ${username}. Site: https://havenova-x.vercel.app.` };
-      
-      const payload = {
-        model: isDeepThink ? "LongCat-Flash-Thinking" : "LongCat-Flash-Chat",
-        messages: [sysPrompt, ...memory],
-        max_tokens: 2048,
-        temperature: 0.7
-      };
+        #drawer-backdrop {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; backdrop-filter: blur(4px);
+        }
 
-      const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-        body: JSON.stringify(payload)
-      });
-      
-      const data = await res.json();
-      return data.choices[0].message.content;
-    }
+        @media (max-width: 768px) {
+            #drawer { position: fixed; left: calc(-1 * var(--drawer-width)); }
+            #drawer.open { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
+            #drawer.open + #drawer-backdrop { display: block; }
+        }
 
-    // --- HELPERS ---
-    function displayMessage(text, role) {
-      const id = 'msg_' + Date.now();
-      const div = document.createElement('div');
-      div.className = `msg ${role}`;
-      div.id = id;
-      div.innerText = text;
-      document.getElementById('chatBox').appendChild(div);
-      const box = document.getElementById('chatBox');
-      box.scrollTop = box.scrollHeight;
-      return id;
-    }
+        .chat-item {
+            padding: 14px; border-radius: 15px; background: rgba(255,255,255,0.03);
+            margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between;
+            align-items: center; border: 1px solid transparent; transition: 0.2s;
+        }
+        .chat-item.active { border-color: var(--accent); background: rgba(0, 123, 255, 0.15); box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.1); }
 
-    function addToMemory(role, content) {
-      chats[currentChatId].messages.push({ role, content });
-      if(chats[currentChatId].messages.length === 1) {
-        chats[currentChatId].title = content.substring(0, 20) + "...";
-      }
-      saveAndRefresh();
-    }
+        /* MAIN */
+        .main-chat { flex: 1; display: flex; flex-direction: column; background: radial-gradient(circle at 50% 0%, #1a1a1a, #0a0a0a); }
+        
+        header {
+            padding: 15px 25px; display: flex; align-items: center; justify-content: space-between;
+            background: var(--glass); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
 
-    function toggleDeepThink() {
-      isDeepThink = !isDeepThink;
-      document.getElementById('dtStatus').innerText = isDeepThink ? "ON" : "OFF";
-      document.getElementById('deepThinkToggle').classList.toggle('active');
-    }
+        #chatBox {
+            flex: 1; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; gap: 20px;
+            scroll-behavior: smooth;
+        }
 
-    function saveAndRefresh() {
-      localStorage.setItem('dechris_chats', JSON.stringify(chats));
-      renderChatList();
-    }
+        /* MESSAGE BUBBLES */
+        .msg { max-width: 85%; padding: 14px 18px; border-radius: 20px; font-size: 0.95rem; animation: msgSlide 0.3s ease-out; position: relative; word-wrap: break-word; }
+        @keyframes msgSlide { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .msg.user { align-self: flex-end; background: var(--accent); color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 15px var(--accent-glow); }
+        .msg.ai { align-self: flex-start; background: var(--surface); border: 1px solid rgba(255,255,255,0.08); border-bottom-left-radius: 4px; }
 
-    function toggleDrawer() {
-        document.getElementById('drawer').classList.toggle('open');
-    }
-  </script>
+        /* INPUT AREA */
+        .input-wrapper { padding: 20px; max-width: 900px; width: 100%; margin: 0 auto; }
+        .input-container {
+            background: var(--surface); border-radius: 28px; padding: 10px 18px;
+            display: flex; align-items: center; gap: 12px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        textarea {
+            flex: 1; background: transparent; border: none; color: white;
+            padding: 8px 0; font-size: 1rem; outline: none; resize: none; max-height: 150px;
+        }
+
+        .action-btn {
+            width: 42px; height: 42px; border-radius: 50%; border: none; 
+            background: var(--accent); color: white; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .action-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--accent); }
+
+        /* UI STUFF */
+        .close-drawer { display: none; margin-bottom: 20px; text-align: right; font-size: 1.5rem; }
+        @media (max-width: 768px) { .close-drawer { display: block; } }
+
+        .tag { font-size: 10px; font-family: 'Orbitron'; background: var(--accent); padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <div id="notif-overlay">
+        <div class="notif-card">
+            <i class="fas fa-satellite-dish" style="color: var(--accent); font-size: 2rem; margin-bottom: 15px;"></i>
+            <h3 style="font-family: 'Orbitron'; margin-bottom: 10px;">SYSTEM UPDATE</h3>
+            <p id="notif-text" style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 20px;"></p>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                <input type="checkbox" id="dontShow"> <label for="dontShow" style="font-size: 0.8rem;">Don't show again</label>
+            </div>
+            <button onclick="closeNotif()" class="action-btn" style="width: 100%; border-radius: 12px; font-weight: bold;">ACKNOWLEDGE</button>
+        </div>
+    </div>
+
+    <div id="splash">
+        <div class="loader-ring"></div>
+        <img src="logo.png" alt="Logo" width="80">
+        <p style="margin-top: 25px; font-family: 'Orbitron'; letter-spacing: 4px; color: var(--accent);">DECHRIS AI</p>
+    </div>
+
+    <div class="app-container">
+        <div id="drawer-backdrop" onclick="toggleDrawer()"></div>
+        <aside id="drawer">
+            <div class="close-drawer" onclick="toggleDrawer()"><i class="fas fa-times"></i></div>
+            <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: var(--accent); font-size: 1rem;">MISSION LOGS</h3>
+            <div id="chatList" style="flex: 1; overflow-y: auto;"></div>
+            
+            <button onclick="createNewChat()" class="chat-item" style="justify-content: center; background: var(--accent); color: white; font-weight: bold;">
+                <i class="fas fa-plus-circle"></i> &nbsp; NEW MISSION
+            </button>
+            <div style="margin-top: 15px; font-size: 0.7rem; color: var(--text-dim); text-align: center; letter-spacing: 1px;">
+                HAVENOVA-X CORE v2.0
+            </div>
+        </aside>
+
+        <main class="main-chat">
+            <header>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button class="action-btn" style="background: transparent; border: 1px solid rgba(255,255,255,0.1);" onclick="toggleDrawer()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div style="font-family: 'Orbitron'; font-size: 0.85rem; letter-spacing: 1px;">
+                        DECHRIS <span style="color: var(--accent);">AI WEB</span>
+                    </div>
+                </div>
+                <div id="status-dot" title="System Online" style="width: 10px; height: 10px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 10px #00ff88;"></div>
+            </header>
+
+            <div id="chatBox">
+                <div id="welcome" style="margin: auto; text-align: center; max-width: 400px;">
+                    <img src="logo.png" width="80" style="filter: grayscale(1) opacity(0.2); margin-bottom: 20px;">
+                    <h2 id="greet" style="font-family: 'Orbitron'; font-size: 1.2rem; margin-bottom: 10px;">SECURE CONNECTION ESTABLISHED</h2>
+                    <p style="color: var(--text-dim); font-size: 0.85rem;">Dechris AI is ready to assist. All communications are encrypted.</p>
+                </div>
+            </div>
+
+            <div class="input-wrapper">
+                <div class="input-container">
+                    <textarea id="userInput" placeholder="Command Dechris AI..." rows="1" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea>
+                    <button id="sendBtn" class="action-btn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- SECURE STORAGE & STATE ---
+        const CONFIG = {
+            keys: ["ak_1gX15h2Sd9sr4SP3gZ84C1KT3gg6R", "ak_1oM1lq7G33vK9QK2Xu1dF3EL9kZ80"],
+            keyIdx: 0,
+            notifPath: '/notif.txt' // Ensure this is correct for your root
+        };
+
+        let chats = JSON.parse(localStorage.getItem('dech_v2_chats') || '{}');
+        let activeChatId = localStorage.getItem('dech_v2_active') || '';
+        let username = localStorage.getItem('username') || 'Agent';
+
+        // --- CORE INITIALIZATION ---
+        window.onload = () => {
+            setGreeting();
+            checkNotifications();
+            
+            // Auto-create chat if none exists (Requirement met)
+            if (Object.keys(chats).length === 0) {
+                createNewChat();
+            } else if (activeChatId && chats[activeChatId]) {
+                loadChat(activeChatId);
+            }
+
+            setTimeout(() => {
+                document.getElementById('splash').style.opacity = '0';
+                setTimeout(() => document.getElementById('splash').remove(), 800);
+            }, 2000);
+        };
+
+        function setGreeting() {
+            const hr = new Date().getHours();
+            let g = "Access Granted";
+            if (hr < 12) g = "Good Morning";
+            else if (hr < 17) g = "Good Afternoon";
+            else g = "Good Evening";
+            document.getElementById('greet').innerText = `${g}, ${username}`;
+        }
+
+        // --- NOTIFICATION LOGIC ---
+        async function checkNotifications() {
+            if (localStorage.getItem('hide_notif') === 'true') return;
+            try {
+                const res = await fetch(CONFIG.notifPath + '?t=' + Date.now());
+                const text = await res.text();
+                const lastKnown = localStorage.getItem('last_notif_text');
+                
+                if (text.trim() && text !== lastKnown) {
+                    document.getElementById('notif-text').innerText = text;
+                    document.getElementById('notif-overlay').style.display = 'flex';
+                }
+            } catch (e) { console.log("Notif sync failed."); }
+        }
+
+        function closeNotif() {
+            const text = document.getElementById('notif-text').innerText;
+            if (document.getElementById('dontShow').checked) {
+                localStorage.setItem('hide_notif', 'true');
+                localStorage.setItem('last_notif_text', text);
+            }
+            document.getElementById('notif-overlay').style.display = 'none';
+        }
+
+        // --- DRAWER & CHATS ---
+        function toggleDrawer() {
+            document.getElementById('drawer').classList.toggle('open');
+        }
+
+        function createNewChat() {
+            const id = 'mission_' + Date.now();
+            chats[id] = { title: "New Mission", messages: [], date: new Date().toLocaleString() };
+            save();
+            loadChat(id);
+            if (window.innerWidth <= 768) toggleDrawer();
+        }
+
+        function loadChat(id) {
+            activeChatId = id;
+            localStorage.setItem('dech_v2_active', id);
+            document.getElementById('welcome').style.display = 'none';
+            const box = document.getElementById('chatBox');
+            box.innerHTML = '';
+            chats[id].messages.forEach(m => renderMsg(m.content, m.role));
+            renderList();
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function renderList() {
+            const list = document.getElementById('chatList');
+            list.innerHTML = '';
+            Object.keys(chats).reverse().forEach(id => {
+                const div = document.createElement('div');
+                div.className = `chat-item ${id === activeChatId ? 'active' : ''}`;
+                div.innerHTML = `<span style="font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                    <i class="fas fa-terminal" style="font-size:0.7rem; color:var(--accent);"></i> ${chats[id].title}
+                                 </span>
+                                 <i class="fas fa-times" style="font-size:0.8rem; opacity:0.3;" onclick="deleteChat('${id}', event)"></i>`;
+                div.onclick = () => loadChat(id);
+                list.appendChild(div);
+            });
+        }
+
+        function deleteChat(id, e) {
+            e.stopPropagation();
+            if (confirm("Purge mission records?")) {
+                delete chats[id];
+                if (activeChatId === id) {
+                    activeChatId = '';
+                    document.getElementById('chatBox').innerHTML = '';
+                    document.getElementById('welcome').style.display = 'flex';
+                }
+                save();
+                renderList();
+                if (Object.keys(chats).length === 0) createNewChat();
+            }
+        }
+
+        // --- AI LOGIC (Integrated Prompt) ---
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const val = input.value.trim();
+            if (!val || !activeChatId) return;
+
+            input.value = '';
+            input.style.height = '';
+            
+            renderMsg(val, 'user');
+            chats[activeChatId].messages.push({ role: 'user', content: val });
+            
+            if (chats[activeChatId].messages.length === 1) {
+                chats[activeChatId].title = val.substring(0, 25);
+            }
+
+            const typingDiv = renderMsg("Decoding signal...", 'ai');
+            
+            try {
+                const response = await callAI(val);
+                typingDiv.innerText = response;
+                chats[activeChatId].messages.push({ role: 'assistant', content: response });
+                save();
+            } catch (err) {
+                typingDiv.innerText = "⚠️ UPLINK CRITICAL FAILURE. Retrying...";
+            }
+        }
+
+        async function callAI(text) {
+            const key = CONFIG.keys[CONFIG.keyIdx];
+            CONFIG.keyIdx = (CONFIG.keyIdx + 1) % CONFIG.keys.length;
+
+            const system = `You are Dechris AI created by the Havenova-x team lead by their founder Dechris, a helpful assistant. Keep responses clean, avoid emojis, and never repeat characters or symbols. If any user asks to contact Havenova-x, give them the email havenova.x@gmail.com. You are currently chatting with ${username}. Address the user as ${username}.`;
+
+            // Memory limit of 10 to prevent breakage
+            const memory = chats[activeChatId].messages.slice(-10).map(m => ({
+                role: m.role, content: m.content
+            }));
+
+            const response = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+                body: JSON.stringify({
+                    model: "LongCat-Flash-Chat",
+                    messages: [{ role: "system", content: system }, ...memory],
+                    temperature: 0.6,
+                    max_tokens: 1500
+                })
+            });
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        function renderMsg(text, role) {
+            const box = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = `msg ${role}`;
+            div.innerText = text;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+            return div;
+        }
+
+        function save() {
+            localStorage.setItem('dech_v2_chats', JSON.stringify(chats));
+        }
+
+        // --- SECURITY ---
+        document.onkeydown = (e) => {
+            if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
+        };
+    </script>
 </body>
 </html>
