@@ -57,13 +57,19 @@ const App = {
     },
 
     completeSetup() {
-        const name = document.getElementById('setupName').value.trim();
+        const nameInput = document.getElementById('setupName');
+        const name = nameInput.value.trim();
         if (name) {
             this.state.userName = name;
             this.saveData();
             document.getElementById('setupModal').classList.remove('active');
             this.updateUI();
             this.createNewChat();
+        } else {
+            nameInput.style.borderColor = '#ff4444';
+            setTimeout(() => {
+                nameInput.style.borderColor = '';
+            }, 1000);
         }
     },
 
@@ -92,7 +98,6 @@ const App = {
             this.updateSidebar();
         }
         
-        // Close sidebar on mobile
         if (window.innerWidth < 768) {
             document.getElementById('sidebar').classList.remove('open');
         }
@@ -165,16 +170,10 @@ const App = {
     },
 
     formatMessage(text) {
-        // Escape HTML
         text = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        
-        // Bold
         text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        
-        // Italic
         text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
         
-        // Code blocks
         text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
             const language = lang || 'text';
             return `
@@ -188,10 +187,7 @@ const App = {
             `;
         });
         
-        // Inline code
         text = text.replace(/`([^`]+)`/g, '<code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-family: monospace;">$1</code>');
-        
-        // Line breaks
         text = text.replace(/\n/g, '<br>');
         
         return text;
@@ -212,7 +208,6 @@ const App = {
         
         if (!text || !this.state.currentChatId) return;
         
-        // Add user message
         this.appendMessage(text, 'user');
         this.state.chats[this.state.currentChatId].messages.push({
             role: 'user',
@@ -220,7 +215,6 @@ const App = {
             timestamp: Date.now()
         });
         
-        // Update title if first message
         if (this.state.chats[this.state.currentChatId].messages.length === 1) {
             this.state.chats[this.state.currentChatId].title = text.substring(0, 30);
             this.updateSidebar();
@@ -230,13 +224,11 @@ const App = {
         input.style.height = 'auto';
         this.saveData();
         
-        // Show typing indicator
         this.state.isTyping = true;
         this.updateSendButton();
         const typingId = this.showTyping();
         
         try {
-            // Prepare messages for API
             const systemMsg = {
                 role: "system",
                 content: `You are Dechris AI, created by Havenova-X team led by founder Dechris. Address the user as "${this.state.userName}". Be professional, concise, and helpful. Use markdown for formatting. Contact: havenova.x@gmail.com`
@@ -248,10 +240,8 @@ const App = {
                 content: m.content
             }))];
             
-            // Call API
             const response = await window.API_CONFIG.callAI(apiMessages, this.state.isDeepThink);
             
-            // Remove typing and add response
             document.getElementById(typingId).remove();
             this.appendMessage(response, 'ai');
             
@@ -331,22 +321,27 @@ const App = {
                 <i class="far fa-comment-alt"></i>
                 <span>${chat.title}</span>
                 <div class="chat-actions">
-                    <button onclick="App.deleteChat('${chat.id}', event)" title="Delete">
+                    <button onclick="event.stopPropagation(); App.deleteChat('${chat.id}')" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             `;
-            item.onclick = () => this.loadChat(chat.id);
+            
+            // Better click handling for both mouse and touch
+            item.addEventListener('click', () => this.loadChat(chat.id));
+            item.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.loadChat(chat.id);
+            });
+            
             list.appendChild(item);
         });
         
-        // Update user info
         document.getElementById('sidebarUserName').textContent = this.state.userName;
         document.getElementById('userAvatar').textContent = this.state.userName[0].toUpperCase();
     },
 
-    deleteChat(id, event) {
-        event.stopPropagation();
+    deleteChat(id) {
         if (confirm('Delete this mission?')) {
             delete this.state.chats[id];
             if (this.state.currentChatId === id) {
@@ -388,7 +383,6 @@ const App = {
         }
     },
 
-    // Settings
     openSettings() {
         document.getElementById('settingsName').value = this.state.userName;
         document.getElementById('notifToggle').checked = !this.state.notifMuted;
@@ -410,7 +404,6 @@ const App = {
         this.closeSettings();
     },
 
-    // Notifications
     async checkNotifications() {
         if (this.state.notifMuted) return;
         
@@ -443,7 +436,6 @@ const App = {
         this.dismissNotif();
     },
 
-    // UI Helpers
     toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('open');
     },
@@ -461,7 +453,32 @@ const App = {
     },
 
     setupEventListeners() {
-        // Close sidebar on outside click (mobile)
+        // Setup button - both click and touch
+        const setupBtn = document.querySelector('#setupModal .save-btn');
+        if (setupBtn) {
+            setupBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.completeSetup();
+            });
+            setupBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.completeSetup();
+            });
+        }
+
+        // Allow Enter key in setup input
+        const setupInput = document.getElementById('setupName');
+        if (setupInput) {
+            setupInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.completeSetup();
+                }
+            });
+        }
+
+        // Global click handler for mobile
         document.addEventListener('click', (e) => {
             const sidebar = document.getElementById('sidebar');
             const toggle = document.querySelector('.menu-toggle');
@@ -473,11 +490,93 @@ const App = {
             }
         });
 
+        // Send button
+        const sendBtn = document.getElementById('sendBtn');
+        if (sendBtn) {
+            sendBtn.addEventListener('click', () => this.sendMessage());
+            sendBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.sendMessage();
+            });
+        }
+
+        // Quick action buttons
+        document.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const text = this.textContent.trim();
+                App.quickStart(text);
+            });
+        });
+
         // Check notifications every 30 seconds
         setInterval(() => this.checkNotifications(), 30000);
     }
 };
 
-// Initialize
+// Expose to global scope for inline onclick handlers
 window.App = App;
+
+// Also expose individual functions that are called inline
+window.completeSetup = function() {
+    App.completeSetup();
+};
+
+window.createNewChat = function() {
+    App.createNewChat();
+};
+
+window.toggleSidebar = function() {
+    App.toggleSidebar();
+};
+
+window.toggleDeepThink = function() {
+    App.toggleDeepThink();
+};
+
+window.sendMessage = function() {
+    App.sendMessage();
+};
+
+window.openSettings = function() {
+    App.openSettings();
+};
+
+window.closeSettings = function() {
+    App.closeSettings();
+};
+
+window.saveSettings = function() {
+    App.saveSettings();
+};
+
+window.deleteChat = function(id, event) {
+    if (event) event.stopPropagation();
+    App.deleteChat(id);
+};
+
+window.dismissNotif = function() {
+    App.dismissNotif();
+};
+
+window.muteNotif = function() {
+    App.muteNotif();
+};
+
+window.quickStart = function(text) {
+    App.quickStart(text);
+};
+
+window.autoResize = function(textarea) {
+    App.autoResize(textarea);
+};
+
+window.handleEnter = function(event) {
+    App.handleEnter(event);
+};
+
+window.copyCode = function(btn) {
+    App.copyCode(btn);
+};
+
+// Initialize
 document.addEventListener('DOMContentLoaded', () => App.init());
