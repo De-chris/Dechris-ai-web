@@ -58,9 +58,7 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         html { scroll-behavior: smooth; }
-
         body {
             font-family: var(--font-sans);
             background: var(--bg-primary);
@@ -71,7 +69,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
@@ -623,7 +620,6 @@
             .notification { width: calc(100% - 40px); right: 20px; }
         }
 
-        /* Overlay for mobile sidebar */
         .sidebar-overlay {
             position: fixed; inset: 0; z-index: 150;
             background: rgba(0,0,0,0.5);
@@ -633,13 +629,11 @@
         }
         .sidebar-overlay.active { display: block; opacity: 1; }
 
-        /* Empty state for chat list */
         .chat-list-empty {
             text-align: center; padding: 40px 20px;
             color: var(--text-muted); font-size: 0.85rem;
         }
 
-        /* Mode badge in message */
         .mode-badge {
             display: inline-flex; align-items: center; gap: 4px;
             font-size: 0.7rem; padding: 2px 8px; border-radius: 4px;
@@ -649,7 +643,6 @@
         .mode-badge.agent { background: var(--accent-agent-glow); color: var(--accent-agent); }
         .mode-badge.analyze { background: var(--accent-analyze-glow); color: var(--accent-analyze); }
 
-        /* Fade animations */
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -664,14 +657,14 @@
     <div id="splash">
         <div class="splash-content">
             <div class="pulse-ring">
-                <i class="fas fa-robot splash-logo"></i>
+                <img src="logo.png" alt="Dechris AI" class="splash-logo" style="width:40px;height:40px;object-fit:contain;">
             </div>
             <div class="splash-text">DECHRIS AI</div>
             <p style="color: var(--text-secondary); margin-top: 16px; font-size: 0.9rem;">Havenova-X Protocol</p>
         </div>
     </div>
 
-    <!-- Setup Modal (First Time) -->
+    <!-- Setup Modal -->
     <div id="setupModal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
@@ -744,9 +737,7 @@
                 <span>New mission</span>
             </button>
         </div>
-
         <div class="chat-list" id="chatList"></div>
-
         <div class="sidebar-footer">
             <div class="user-profile" onclick="App.openSettings()">
                 <div class="user-avatar" id="userAvatar">A</div>
@@ -759,7 +750,6 @@
         </div>
     </aside>
 
-    <!-- Mobile Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="App.toggleSidebar()"></div>
 
     <!-- Main Content -->
@@ -779,13 +769,13 @@
                 <button class="icon-btn" onclick="App.createNewChat()" title="New Chat">
                     <i class="fas fa-edit"></i>
                 </button>
-                <img src="logo.png" width="28" height="28" style="border-radius: 50%; opacity: 0.9;">
+                <img src="logo.png" width="28" height="28" style="border-radius: 50%; opacity: 0.9; object-fit: cover;">
             </div>
         </nav>
 
         <div class="chat-container" id="chatContainer">
-            <!-- Welcome Screen -->
             <div id="welcomeScreen" class="welcome-screen">
+                <img src="logo.png" alt="Dechris AI" style="width:64px;height:64px;margin-bottom:20px;opacity:0.9;object-fit:contain;">
                 <h1 class="welcome-title" id="welcomeTitle">Hello, Agent</h1>
                 <p class="welcome-subtitle">
                     I'm Dechris AI, your advanced technical partner. How can I assist your workflow today?
@@ -809,12 +799,9 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Messages Container -->
             <div id="messagesList" class="messages-list hidden"></div>
         </div>
 
-        <!-- Input Area -->
         <div class="input-area">
             <div class="input-container">
                 <div id="filePreview" class="file-preview" style="display: none;">
@@ -881,7 +868,8 @@
                         icon: 'fa-bolt', 
                         color: '#3b82f6',
                         placeholder: 'Message Dechris AI...',
-                        desc: 'Fast, general-purpose chat'
+                        desc: 'Fast, general-purpose chat',
+                        payloadType: 'messages'
                     },
                     agent: { 
                         name: 'DeepThink', 
@@ -889,7 +877,8 @@
                         icon: 'fa-brain', 
                         color: '#a855f7',
                         placeholder: 'Ask DeepThink to code, plan, or reason...',
-                        desc: 'Multi-step reasoning & coding'
+                        desc: 'Multi-step reasoning & coding',
+                        payloadType: 'input'
                     },
                     analyze: { 
                         name: 'Analyze', 
@@ -897,7 +886,8 @@
                         icon: 'fa-microscope', 
                         color: '#10b981',
                         placeholder: 'Upload a file or paste text to analyze...',
-                        desc: 'File & text analysis'
+                        desc: 'File & text analysis',
+                        payloadType: 'text'
                     }
                 }
             },
@@ -906,7 +896,6 @@
                 this.loadSettings();
                 this.loadChats();
 
-                // Configure marked
                 marked.setOptions({
                     breaks: true,
                     gfm: true,
@@ -914,7 +903,6 @@
                     mangle: false
                 });
 
-                // Setup renderer for code blocks
                 const renderer = new marked.Renderer();
                 renderer.code = function(code, language) {
                     const validLang = language && Prism.languages[language] ? language : 'text';
@@ -923,45 +911,42 @@
                 };
                 marked.setOptions({ renderer });
 
-                // Check first time setup
                 if (!this.state.settings.name) {
                     setTimeout(() => this.openSetup(), 800);
                 }
 
-                // Auto-create chat on load
                 if (this.state.chats.length === 0) {
                     this.createNewChat(false);
                 } else {
-                    // Open most recent chat
                     const lastChat = this.state.chats[0];
                     this.switchChat(lastChat.id, false);
                 }
 
-                // Hide splash
+                // Always hide splash after delay
                 setTimeout(() => {
-                    document.getElementById('splash').classList.add('hidden');
+                    const splash = document.getElementById('splash');
+                    if (splash) {
+                        splash.classList.add('hidden');
+                        splash.style.display = 'none';
+                    }
                 }, 1200);
 
-                // Setup sidebar for mobile
                 this.updateSidebar();
                 window.addEventListener('resize', () => this.updateSidebar());
-
-                // Focus input
-                setTimeout(() => document.getElementById('userInput').focus(), 1500);
+                setTimeout(() => {
+                    const input = document.getElementById('userInput');
+                    if (input) input.focus();
+                }, 1500);
             },
 
             loadSettings() {
                 try {
                     const saved = localStorage.getItem('dechris_settings');
-                    if (saved) {
-                        this.state.settings = JSON.parse(saved);
-                    }
-                } catch (e) { console.error('Load settings error:', e); }
-
+                    if (saved) this.state.settings = JSON.parse(saved);
+                } catch (e) {}
                 if (!this.state.settings) {
                     this.state.settings = { name: '', notifications: true };
                 }
-
                 this.updateUserUI();
             },
 
@@ -972,48 +957,58 @@
                 localStorage.setItem('dechris_settings', JSON.stringify(this.state.settings));
                 this.updateUserUI();
                 this.closeSettings();
-                this.showNotification('Settings Saved', 'Your preferences have been updated.');
             },
 
             updateUserUI() {
                 const name = this.state.settings.name || 'Agent';
-                document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
-                document.getElementById('sidebarUserName').textContent = name;
-                document.getElementById('welcomeTitle').textContent = `Hello, ${name}`;
-                document.getElementById('settingsName').value = name;
-                document.getElementById('notifToggle').checked = this.state.settings.notifications !== false;
+                const avatar = document.getElementById('userAvatar');
+                if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
+                const sname = document.getElementById('sidebarUserName');
+                if (sname) sname.textContent = name;
+                const wtitle = document.getElementById('welcomeTitle');
+                if (wtitle) wtitle.textContent = `Hello, ${name}`;
+                const snameInput = document.getElementById('settingsName');
+                if (snameInput) snameInput.value = name;
+                const notifToggle = document.getElementById('notifToggle');
+                if (notifToggle) notifToggle.checked = this.state.settings.notifications !== false;
             },
 
             openSetup() {
-                document.getElementById('setupModal').classList.add('active');
-                setTimeout(() => document.getElementById('setupName').focus(), 300);
+                const modal = document.getElementById('setupModal');
+                if (modal) modal.classList.add('active');
+                setTimeout(() => {
+                    const el = document.getElementById('setupName');
+                    if (el) el.focus();
+                }, 300);
             },
 
             completeSetup() {
-                const name = document.getElementById('setupName').value.trim();
+                const el = document.getElementById('setupName');
+                const name = el ? el.value.trim() : '';
                 if (!name) return;
                 this.state.settings.name = name;
                 this.state.settings.notifications = true;
                 localStorage.setItem('dechris_settings', JSON.stringify(this.state.settings));
                 this.updateUserUI();
-                document.getElementById('setupModal').classList.remove('active');
+                const modal = document.getElementById('setupModal');
+                if (modal) modal.classList.remove('active');
             },
 
             openSettings() {
-                document.getElementById('settingsModal').classList.add('active');
+                const modal = document.getElementById('settingsModal');
+                if (modal) modal.classList.add('active');
             },
 
             closeSettings() {
-                document.getElementById('settingsModal').classList.remove('active');
+                const modal = document.getElementById('settingsModal');
+                if (modal) modal.classList.remove('active');
             },
 
             loadChats() {
                 try {
                     const saved = localStorage.getItem('dechris_chats');
-                    if (saved) {
-                        this.state.chats = JSON.parse(saved);
-                    }
-                } catch (e) { console.error('Load chats error:', e); }
+                    if (saved) this.state.chats = JSON.parse(saved);
+                } catch (e) {}
                 if (!this.state.chats) this.state.chats = [];
                 this.renderChatList();
             },
@@ -1021,7 +1016,7 @@
             saveChats() {
                 try {
                     localStorage.setItem('dechris_chats', JSON.stringify(this.state.chats));
-                } catch (e) { console.error('Save chats error:', e); }
+                } catch (e) {}
                 this.renderChatList();
             },
 
@@ -1037,7 +1032,6 @@
                 this.state.chats.unshift(chat);
                 this.saveChats();
                 this.switchChat(chat.id, focus);
-                this.showNotification('New Mission', 'A new chat session has been initialized.');
             },
 
             switchChat(id, focus = true) {
@@ -1045,29 +1039,28 @@
                 const chat = this.state.chats.find(c => c.id === id);
                 if (!chat) return;
 
-                // Update mode to match chat
                 this.state.mode = chat.mode || 'chat';
                 this.updateModeUI();
-
-                // Render messages
                 this.renderMessages(chat.messages);
 
-                // Show/hide welcome screen
                 const welcome = document.getElementById('welcomeScreen');
                 const messagesList = document.getElementById('messagesList');
                 if (chat.messages.length === 0) {
-                    welcome.classList.remove('hidden');
-                    messagesList.classList.add('hidden');
+                    if (welcome) welcome.classList.remove('hidden');
+                    if (messagesList) messagesList.classList.add('hidden');
                 } else {
-                    welcome.classList.add('hidden');
-                    messagesList.classList.remove('hidden');
+                    if (welcome) welcome.classList.add('hidden');
+                    if (messagesList) messagesList.classList.remove('hidden');
                 }
 
                 this.updateMsgCount();
                 this.renderChatList();
 
                 if (focus) {
-                    setTimeout(() => document.getElementById('userInput').focus(), 100);
+                    setTimeout(() => {
+                        const input = document.getElementById('userInput');
+                        if (input) input.focus();
+                    }, 100);
                 }
             },
 
@@ -1089,6 +1082,7 @@
 
             renderChatList() {
                 const list = document.getElementById('chatList');
+                if (!list) return;
                 if (this.state.chats.length === 0) {
                     list.innerHTML = '<div class="chat-list-empty">No missions yet</div>';
                     return;
@@ -1133,7 +1127,6 @@
                     this.saveChats();
                 }
                 this.updateModeUI();
-                this.showNotification('Mode Switched', `Now using ${this.config.modes[mode].name}`);
             },
 
             updateModeUI() {
@@ -1145,25 +1138,29 @@
                 const inputWrapper = document.getElementById('inputWrapper');
                 const input = document.getElementById('userInput');
 
-                // Update selector
-                selector.className = 'model-selector ' + this.state.mode;
-                icon.className = 'fas ' + cfg.icon;
-                icon.style.color = cfg.color;
-                name.textContent = cfg.name;
+                if (selector) {
+                    selector.className = 'model-selector ' + this.state.mode;
+                }
+                if (icon) {
+                    icon.className = 'fas ' + cfg.icon;
+                    icon.style.color = cfg.color;
+                }
+                if (name) name.textContent = cfg.name;
 
-                // Update deep think button
-                deepBtn.className = 'icon-btn';
-                if (this.state.mode === 'agent') deepBtn.classList.add('agent-active');
-                else if (this.state.mode === 'analyze') deepBtn.classList.add('analyze-active');
-                else deepBtn.classList.add('active');
+                if (deepBtn) {
+                    deepBtn.className = 'icon-btn';
+                    if (this.state.mode === 'agent') deepBtn.classList.add('agent-active');
+                    else if (this.state.mode === 'analyze') deepBtn.classList.add('analyze-active');
+                    else deepBtn.classList.add('active');
+                }
 
-                // Update input wrapper border glow
-                inputWrapper.className = 'input-wrapper';
-                if (this.state.mode === 'agent') inputWrapper.classList.add('agent-mode');
-                else if (this.state.mode === 'analyze') inputWrapper.classList.add('analyze-mode');
+                if (inputWrapper) {
+                    inputWrapper.className = 'input-wrapper';
+                    if (this.state.mode === 'agent') inputWrapper.classList.add('agent-mode');
+                    else if (this.state.mode === 'analyze') inputWrapper.classList.add('analyze-mode');
+                }
 
-                // Update placeholder
-                input.placeholder = cfg.placeholder;
+                if (input) input.placeholder = cfg.placeholder;
             },
 
             getCurrentChat() {
@@ -1172,6 +1169,7 @@
 
             renderMessages(messages) {
                 const container = document.getElementById('messagesList');
+                if (!container) return;
                 if (!messages || messages.length === 0) {
                     container.innerHTML = '';
                     return;
@@ -1179,7 +1177,6 @@
 
                 container.innerHTML = messages.map(msg => this.buildMessageHTML(msg)).join('');
 
-                // Apply syntax highlighting
                 requestAnimationFrame(() => {
                     container.querySelectorAll('pre code').forEach(block => {
                         Prism.highlightElement(block);
@@ -1213,7 +1210,7 @@
 
             async sendMessage() {
                 const input = document.getElementById('userInput');
-                const text = input.value.trim();
+                const text = input ? input.value.trim() : '';
                 const file = this.state.currentFile;
 
                 if (!text && !file) return;
@@ -1224,53 +1221,74 @@
                     return this.sendMessage();
                 }
 
-                // Hide welcome screen
-                document.getElementById('welcomeScreen').classList.add('hidden');
-                document.getElementById('messagesList').classList.remove('hidden');
+                const welcome = document.getElementById('welcomeScreen');
+                const messagesList = document.getElementById('messagesList');
+                if (welcome) welcome.classList.add('hidden');
+                if (messagesList) messagesList.classList.remove('hidden');
 
-                // Build user content
                 let userContent = text;
                 if (file) {
-                    const fileContent = await this.readFile(file);
-                    userContent = text ? `${text}\n\n---\n**File:** ${file.name}\n\n\`\`\`\n${fileContent}\n\`\`\`` : `Analyze this file (${file.name}):\n\n\`\`\`\n${fileContent}\n\`\`\``;
+                    try {
+                        const fileContent = await this.readFile(file);
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        userContent = text 
+                            ? `${text}\n\n---\n**File:** ${file.name}\n\n\`\`\`${ext}\n${fileContent}\n\`\`\`` 
+                            : `Analyze this file (${file.name}):\n\n\`\`\`${ext}\n${fileContent}\n\`\`\``;
+                    } catch (e) {
+                        userContent = text || `Failed to read file: ${file.name}`;
+                    }
                 }
 
-                // Add user message optimistically
                 const userMsg = { role: 'user', content: userContent, timestamp: Date.now() };
                 chat.messages.push(userMsg);
                 chat.updatedAt = Date.now();
 
-                // Update title from first message
-                if (chat.messages.filter(m => m.role === 'user').length === 1) {
-                    chat.title = text.substring(0, 40) || 'File Analysis';
+                const userCount = chat.messages.filter(m => m.role === 'user').length;
+                if (userCount === 1) {
+                    chat.title = text.substring(0, 40) || (file ? file.name : 'New Mission');
                 }
 
                 this.saveChats();
                 this.renderMessages(chat.messages);
                 this.updateMsgCount();
 
-                // Clear input
-                input.value = '';
-                input.style.height = 'auto';
+                if (input) {
+                    input.value = '';
+                    input.style.height = 'auto';
+                }
                 this.removeFile();
 
-                // Show typing
                 this.showTyping();
                 this.state.isTyping = true;
-                document.getElementById('sendBtn').disabled = true;
+                const sendBtn = document.getElementById('sendBtn');
+                if (sendBtn) sendBtn.disabled = true;
 
                 try {
-                    // Prepare API payload - last 20 messages
-                    const recentMessages = chat.messages.slice(-this.config.maxMessages).map(m => ({
-                        role: m.role,
-                        content: m.content
-                    }));
-
                     const cfg = this.config.modes[this.state.mode];
-                    const response = await fetch(this.config.baseUrl + cfg.endpoint, {
+                    let body, url;
+
+                    if (this.state.mode === 'chat') {
+                        const recentMessages = chat.messages.slice(-this.config.maxMessages).map(m => ({
+                            role: m.role,
+                            content: m.content
+                        }));
+                        body = JSON.stringify({ messages: recentMessages });
+                        url = this.config.baseUrl + cfg.endpoint;
+                    } else if (this.state.mode === 'agent') {
+                        // Agent uses last user message as input
+                        const lastUserMsg = [...chat.messages].reverse().find(m => m.role === 'user');
+                        body = JSON.stringify({ input: lastUserMsg ? lastUserMsg.content : userContent });
+                        url = this.config.baseUrl + cfg.endpoint;
+                    } else {
+                        // Analyze uses text
+                        body = JSON.stringify({ text: userContent });
+                        url = this.config.baseUrl + cfg.endpoint;
+                    }
+
+                    const response = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ messages: recentMessages })
+                        body: body
                     });
 
                     if (!response.ok) {
@@ -1279,23 +1297,22 @@
 
                     const data = await response.json();
 
-                    // Extract assistant message
+                    // Backend returns { "reply": "AI response here" }
                     let assistantContent = '';
-                    if (data.message && typeof data.message.content === 'string') {
-                        assistantContent = data.message.content;
-                    } else if (data.content && typeof data.content === 'string') {
-                        assistantContent = data.content;
-                    } else if (data.response && typeof data.response === 'string') {
+                    if (data && typeof data.reply === 'string') {
+                        assistantContent = data.reply;
+                    } else if (data && typeof data.response === 'string') {
                         assistantContent = data.response;
-                    } else if (data.choices && data.choices[0] && data.choices[0].message) {
-                        assistantContent = data.choices[0].message.content;
+                    } else if (data && data.message && typeof data.message.content === 'string') {
+                        assistantContent = data.message.content;
+                    } else if (data && typeof data.content === 'string') {
+                        assistantContent = data.content;
                     } else if (typeof data === 'string') {
                         assistantContent = data;
                     } else {
                         assistantContent = JSON.stringify(data, null, 2);
                     }
 
-                    // Add assistant message
                     const assistantMsg = { 
                         role: 'assistant', 
                         content: assistantContent, 
@@ -1306,14 +1323,13 @@
                     chat.updatedAt = Date.now();
                     this.saveChats();
 
-                    // Hide typing and render
                     this.hideTyping();
                     this.renderMessages(chat.messages);
                     this.updateMsgCount();
 
-                    // Notification
+                    // Only show notification if tab is hidden AND notifications enabled
                     if (this.state.settings.notifications !== false && document.hidden) {
-                        this.showNotification('New Response', 'Dechris AI has responded to your message.');
+                        this.showNotification('New Response', 'Dechris AI has responded.');
                     }
 
                 } catch (error) {
@@ -1322,7 +1338,7 @@
 
                     const errorMsg = { 
                         role: 'assistant', 
-                        content: `**Error:** Unable to reach Dechris AI.\n\n${this.escapeHtml(error.message)}\n\nPlease check your connection and try again.`, 
+                        content: `**Connection Error**\n\n${this.escapeHtml(error.message)}\n\nThe server may be unavailable. Please try again later.`, 
                         timestamp: Date.now(),
                         mode: this.state.mode,
                         isError: true
@@ -1332,17 +1348,18 @@
                     this.saveChats();
                     this.renderMessages(chat.messages);
                     this.updateMsgCount();
-
-                    this.showNotification('Connection Error', 'Failed to reach the AI server.');
                 } finally {
                     this.state.isTyping = false;
-                    document.getElementById('sendBtn').disabled = false;
-                    document.getElementById('userInput').focus();
+                    const btn = document.getElementById('sendBtn');
+                    if (btn) btn.disabled = false;
+                    const inp = document.getElementById('userInput');
+                    if (inp) inp.focus();
                 }
             },
 
             showTyping() {
                 const container = document.getElementById('messagesList');
+                if (!container) return;
                 const typingHTML = `<div class="typing-indicator" id="typingIndicator">
                     <div class="message-avatar"><i class="fas fa-robot"></i></div>
                     <div class="typing-bubble">
@@ -1362,6 +1379,7 @@
 
             scrollToBottom() {
                 const container = document.getElementById('chatContainer');
+                if (!container) return;
                 requestAnimationFrame(() => {
                     container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
                 });
@@ -1370,10 +1388,11 @@
             updateMsgCount() {
                 const chat = this.getCurrentChat();
                 const count = chat ? chat.messages.length : 0;
-                document.getElementById('msgCount').textContent = count + ' message' + (count !== 1 ? 's' : '');
+                const el = document.getElementById('msgCount');
+                if (el) el.textContent = count + ' message' + (count !== 1 ? 's' : '');
             },
 
-            handleFileSelect(input) {
+            async handleFileSelect(input) {
                 const file = input.files[0];
                 if (!file) return;
 
@@ -1393,19 +1412,28 @@
                 }
 
                 this.state.currentFile = file;
-                document.getElementById('filePreviewName').textContent = file.name;
-                document.getElementById('filePreview').style.display = 'flex';
+                const previewName = document.getElementById('filePreviewName');
+                const preview = document.getElementById('filePreview');
+                if (previewName) previewName.textContent = file.name;
+                if (preview) preview.style.display = 'flex';
 
                 // Auto-switch to analyze mode
                 if (this.state.mode !== 'analyze') {
                     this.setMode('analyze');
                 }
+
+                // Auto-send for analyze mode
+                setTimeout(() => {
+                    this.sendMessage();
+                }, 300);
             },
 
             removeFile() {
                 this.state.currentFile = null;
-                document.getElementById('filePreview').style.display = 'none';
-                document.getElementById('fileInput').value = '';
+                const preview = document.getElementById('filePreview');
+                const fileInput = document.getElementById('fileInput');
+                if (preview) preview.style.display = 'none';
+                if (fileInput) fileInput.value = '';
             },
 
             readFile(file) {
@@ -1413,13 +1441,7 @@
                     const reader = new FileReader();
                     reader.onload = (e) => resolve(e.target.result);
                     reader.onerror = (e) => reject(e);
-
-                    if (file.name.toLowerCase().endsWith('.pdf')) {
-                        // For PDF, try to read as text (will likely be binary, but let's try)
-                        reader.readAsText(file);
-                    } else {
-                        reader.readAsText(file);
-                    }
+                    reader.readAsText(file);
                 });
             },
 
@@ -1439,8 +1461,11 @@
             },
 
             quickStart(text) {
-                document.getElementById('userInput').value = text;
-                this.autoResize(document.getElementById('userInput'));
+                const input = document.getElementById('userInput');
+                if (input) {
+                    input.value = text;
+                    this.autoResize(input);
+                }
                 this.sendMessage();
             },
 
@@ -1455,37 +1480,38 @@
 
                 if (window.innerWidth <= 768) {
                     if (this.state.sidebarOpen) {
-                        sidebar.classList.add('open');
-                        overlay.classList.add('active');
+                        if (sidebar) sidebar.classList.add('open');
+                        if (overlay) overlay.classList.add('active');
                     } else {
-                        sidebar.classList.remove('open');
-                        overlay.classList.remove('active');
+                        if (sidebar) sidebar.classList.remove('open');
+                        if (overlay) overlay.classList.remove('active');
                     }
                 } else {
-                    sidebar.classList.remove('open');
-                    overlay.classList.remove('active');
-                    sidebar.style.transform = '';
+                    if (sidebar) sidebar.classList.remove('open');
+                    if (overlay) overlay.classList.remove('active');
                 }
             },
 
             showNotification(title, text) {
                 if (this.state.notifMuted) return;
                 const notif = document.getElementById('notification');
-                const titleEl = notif.querySelector('.notification-title');
+                const titleEl = notif ? notif.querySelector('.notification-title') : null;
                 const bodyEl = document.getElementById('notifText');
 
-                titleEl.textContent = title;
-                bodyEl.textContent = text;
+                if (!notif) return;
+                if (titleEl) titleEl.textContent = title;
+                if (bodyEl) bodyEl.textContent = text;
                 notif.classList.add('show');
 
                 clearTimeout(this._notifTimer);
                 this._notifTimer = setTimeout(() => {
                     notif.classList.remove('show');
-                }, 5000);
+                }, 4000);
             },
 
             dismissNotif() {
-                document.getElementById('notification').classList.remove('show');
+                const notif = document.getElementById('notification');
+                if (notif) notif.classList.remove('show');
             },
 
             muteNotif() {
@@ -1495,7 +1521,9 @@
 
             copyCode(btn) {
                 const pre = btn.closest('pre');
+                if (!pre) return;
                 const code = pre.querySelector('code');
+                if (!code) return;
                 const text = code.textContent;
 
                 navigator.clipboard.writeText(text).then(() => {
@@ -1516,10 +1544,7 @@
             }
         };
 
-        // Expose to global scope for HTML onclick handlers
         window.App = App;
-
-        // Initialize on load
         document.addEventListener('DOMContentLoaded', () => App.init());
     })();
     </script>
