@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="color-scheme" content="dark">
     <title>Dechris AI | Havenova-X</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0a0a0a">
     <link rel="apple-touch-icon" href="logo.png">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -27,11 +31,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
 
     <style>
+
         :root {
             --bg-primary: #0a0a0f;
             --bg-secondary: #12121a;
             --bg-tertiary: #1a1a25;
-            --bg-glass: rgba(18, 18, 26, 0.9);
+            --bg-glass: rgba(18, 18, 26, 0.95);
             --bg-hover: rgba(255, 255, 255, 0.05);
             --bg-active: rgba(255, 255, 255, 0.08);
             --text-primary: #f0f0f5;
@@ -55,26 +60,36 @@
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --font-mono: 'Fira Code', 'Consolas', monospace;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
         body {
             font-family: var(--font-sans);
             background: var(--bg-primary);
             color: var(--text-primary);
-            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             display: flex;
             -webkit-font-smoothing: antialiased;
+            touch-action: manipulation;
+            overscroll-behavior-y: none;
+            user-select: none;
+        }
+        body * { user-select: text; }
+        body .no-select, body button, body .icon-btn, body .send-btn, body .quick-btn,
+        body .chat-item, body .model-selector, body .menu-toggle {
+            user-select: none;
         }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 
-        /* Splash Screen */
+        /* Splash */
         #splash {
             position: fixed; inset: 0; z-index: 10000;
             background: var(--bg-primary);
@@ -167,8 +182,27 @@
             box-shadow: 0 6px 20px var(--accent-glow);
         }
         .save-btn:active { transform: translateY(0); }
+        .danger-btn {
+            width: 100%; padding: 12px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none; border-radius: var(--radius-md);
+            color: white; font-weight: 600; font-size: 0.9rem;
+            cursor: pointer; transition: var(--transition);
+            margin-top: 8px;
+        }
+        .danger-btn:hover { transform: translateY(-1px); }
+        .file-btn {
+            width: 100%; padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary); font-weight: 500; font-size: 0.9rem;
+            cursor: pointer; transition: var(--transition);
+            margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .file-btn:hover { background: var(--bg-hover); border-color: var(--border-hover); }
 
-        /* File Content Viewer Modal */
+        /* File Content Viewer */
         .file-viewer-overlay {
             position: fixed; inset: 0; z-index: 2500;
             background: rgba(0,0,0,0.85);
@@ -182,6 +216,7 @@
             padding: 16px 24px;
             border-bottom: 1px solid var(--border);
             background: var(--bg-glass);
+            flex-shrink: 0;
         }
         .file-viewer-title {
             display: flex; align-items: center; gap: 12px;
@@ -213,12 +248,13 @@
 
         /* Sidebar */
         #sidebar {
-            width: 280px; height: 100vh;
+            width: 280px; height: 100dvh;
             background: var(--bg-secondary);
             border-right: 1px solid var(--border);
             display: flex; flex-direction: column;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; z-index: 100;
+            flex-shrink: 0;
         }
         .sidebar-header { padding: 16px; }
         .new-chat-btn {
@@ -236,6 +272,8 @@
         }
         .chat-list {
             flex: 1; overflow-y: auto; padding: 0 8px;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
         }
         .chat-item {
             padding: 10px 12px; border-radius: var(--radius-md);
@@ -268,14 +306,19 @@
         .chat-item-mode {
             width: 6px; height: 6px; border-radius: 50%;
         }
-        .chat-item-delete {
-            opacity: 0; background: none; border: none;
-            color: var(--text-muted); cursor: pointer;
-            padding: 4px; border-radius: 4px;
+        .chat-item-actions {
+            display: flex; align-items: center; gap: 2px;
+            opacity: 0; transition: opacity 0.2s ease;
+        }
+        .chat-item:hover .chat-item-actions { opacity: 1; }
+        .chat-item-action {
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; padding: 4px 6px; border-radius: 4px;
             transition: var(--transition); font-size: 0.75rem;
         }
-        .chat-item:hover .chat-item-delete { opacity: 1; }
-        .chat-item-delete:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+        .chat-item-action:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .chat-item-action.rename:hover { color: var(--accent); }
+        .chat-item-action.delete:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
         .sidebar-footer {
             padding: 12px 16px;
             border-top: 1px solid var(--border);
@@ -296,8 +339,9 @@
         /* Main Content */
         .main-content {
             flex: 1; display: flex; flex-direction: column;
-            height: 100vh; overflow: hidden;
+            height: 100dvh; overflow: hidden;
             position: relative;
+            min-width: 0;
         }
         .top-nav {
             height: 60px; padding: 0 20px;
@@ -306,6 +350,7 @@
             background: var(--bg-glass);
             backdrop-filter: blur(20px);
             position: relative; z-index: 50;
+            flex-shrink: 0;
         }
         .nav-left, .nav-right { display: flex; align-items: center; gap: 12px; }
         .menu-toggle {
@@ -336,11 +381,17 @@
         .icon-btn.active { color: var(--accent); background: var(--accent-glow); }
         .icon-btn.agent-active { color: var(--accent-agent); background: var(--accent-agent-glow); }
         .icon-btn.analyze-active { color: var(--accent-analyze); background: var(--accent-analyze-glow); }
+        .icon-btn:disabled {
+            opacity: 0.3; cursor: not-allowed; pointer-events: none;
+        }
 
         /* Chat Container */
         .chat-container {
             flex: 1; overflow-y: auto; overflow-x: hidden;
             position: relative;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
         }
         .welcome-screen {
             display: flex; flex-direction: column;
@@ -349,9 +400,7 @@
             text-align: center;
             transition: opacity 0.4s ease, transform 0.4s ease;
         }
-        .welcome-screen.hidden {
-            display: none;
-        }
+        .welcome-screen.hidden { display: none; }
         .welcome-title {
             font-size: 2.2rem; font-weight: 700; margin-bottom: 12px;
             background: linear-gradient(135deg, var(--text-primary), var(--accent));
@@ -386,8 +435,10 @@
             display: flex; flex-direction: column;
             padding: 20px; gap: 24px;
             max-width: 900px; margin: 0 auto; width: 100%;
+            padding-bottom: 8px;
         }
         .messages-list.hidden { display: none; }
+        .messages-list.typing-active { padding-bottom: 24px; }
         .message {
             display: flex; gap: 16px;
             animation: message-in 0.3s ease;
@@ -516,7 +567,7 @@
             margin: 1.5em 0;
         }
 
-        /* System broadcast in chat */
+        /* System broadcast */
         .system-broadcast-header {
             display: flex; align-items: center; gap: 8px;
             font-weight: 600; font-size: 0.85rem;
@@ -535,7 +586,7 @@
             box-shadow: 0 4px 12px rgba(245,158,11,0.3);
         }
 
-        /* File Attachment Compact Display */
+        /* File Attachment */
         .file-attachment {
             display: inline-flex; align-items: center; gap: 8px;
             background: rgba(255,255,255,0.1);
@@ -558,6 +609,7 @@
         .typing-indicator {
             display: flex; gap: 16px;
             animation: message-in 0.3s ease;
+            margin-top: 8px;
         }
         .typing-bubble {
             background: var(--bg-tertiary);
@@ -584,6 +636,8 @@
             padding: 16px 20px 20px;
             background: linear-gradient(to top, var(--bg-primary), transparent);
             position: relative; z-index: 50;
+            flex-shrink: 0;
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
         }
         .input-container { max-width: 900px; margin: 0 auto; }
         .input-wrapper {
@@ -620,13 +674,15 @@
             display: flex; align-items: center; gap: 4px;
             padding-bottom: 8px;
         }
-        .send-btn {
+        .send-btn, .cancel-btn {
             width: 36px; height: 36px; border-radius: 50%;
-            background: var(--accent); border: none;
-            color: white; font-size: 0.9rem;
+            border: none; color: white; font-size: 0.9rem;
             cursor: pointer; transition: var(--transition);
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 8px var(--accent-glow);
+        }
+        .send-btn {
+            background: var(--accent);
         }
         .send-btn:hover {
             transform: scale(1.05);
@@ -636,6 +692,16 @@
         .send-btn:disabled {
             opacity: 0.5; cursor: not-allowed; transform: none;
         }
+        .cancel-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            box-shadow: 0 2px 8px rgba(239,68,68,0.3);
+            display: none;
+        }
+        .cancel-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+        }
+        .cancel-btn:active { transform: scale(0.95); }
         .input-footer {
             display: flex; justify-content: space-between;
             padding: 8px 4px 0; font-size: 0.75rem;
@@ -655,11 +721,33 @@
         }
         .file-preview-remove:hover { color: #ef4444; }
 
-        /* Mobile */
+        /* Loading State - disable interactions */
+        body.app-loading .icon-btn:not(.cancel-btn),
+        body.app-loading .send-btn:not(.cancel-btn),
+        body.app-loading .quick-btn,
+        body.app-loading .chat-item,
+        body.app-loading .new-chat-btn,
+        body.app-loading .model-selector,
+        body.app-loading .menu-toggle,
+        body.app-loading .file-preview-remove,
+        body.app-loading #fileInputTrigger {
+            opacity: 0.4;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+        body.app-loading .send-btn { display: none; }
+        body.app-loading .cancel-btn { display: flex; }
+
+        /* Mobile App-Like */
         @media (max-width: 768px) {
+            body {
+                position: fixed;
+                inset: 0;
+            }
             #sidebar {
                 position: fixed; left: 0; top: 0; z-index: 200;
                 transform: translateX(-100%);
+                height: 100dvh;
             }
             #sidebar.open { transform: translateX(0); }
             .menu-toggle { display: block; }
@@ -667,6 +755,10 @@
             .quick-actions { grid-template-columns: 1fr; }
             .message-content { max-width: calc(100% - 50px); }
             .file-viewer-overlay { padding: 0; }
+            .chat-item-actions { opacity: 1; }
+            .main-content {
+                width: 100vw;
+            }
         }
 
         .sidebar-overlay {
@@ -697,10 +789,43 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .fade-in { animation: fade-in-up 0.5s ease; }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            z-index: 3000; display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px 18px;
+            font-size: 0.85rem; font-weight: 500;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-md);
+            animation: toast-in 0.3s ease, toast-out 0.3s ease 2.7s forwards;
+            backdrop-filter: blur(12px);
+            pointer-events: auto;
+        }
+        .toast.success { border-color: var(--accent-analyze); color: var(--accent-analyze); }
+        .toast.error { border-color: #ef4444; color: #ef4444; }
+        @keyframes toast-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes toast-out {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
     </style>
-<base target="_blank">
+    <base target="_blank">
 </head>
 <body>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <!-- Splash Screen -->
     <div id="splash">
@@ -757,7 +882,36 @@
                         <span style="font-size: 0.9rem;">Enable background notifications</span>
                     </label>
                 </div>
+                <div class="setting-item" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+                    <label class="setting-label">Data Management</label>
+                    <button class="file-btn" onclick="App.exportAllChats()">
+                        <i class="fas fa-file-archive"></i> Export All Chats (ZIP)
+                    </button>
+                    <button class="file-btn" onclick="document.getElementById('importZipInput').click()">
+                        <i class="fas fa-file-import"></i> Restore from ZIP
+                    </button>
+                    <button class="danger-btn" onclick="App.clearAllData()">
+                        <i class="fas fa-trash-alt"></i> Clear All Data
+                    </button>
+                </div>
                 <button onclick="App.saveSettings()" class="save-btn" style="margin-top: 10px;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div id="renameModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Rename Mission</h3>
+                <button onclick="App.closeRenameModal()" class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <label class="setting-label">Mission Name</label>
+                    <input type="text" id="renameInput" class="setting-input" placeholder="Enter new name" maxlength="40">
+                </div>
+                <button onclick="App.confirmRename()" class="save-btn">Rename</button>
             </div>
         </div>
     </div>
@@ -779,6 +933,10 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden file inputs for import -->
+    <input type="file" id="importZipInput" style="display:none" accept=".zip" onchange="App.handleImportZip(this)">
+    <input type="file" id="importTxtInput" style="display:none" accept=".txt" onchange="App.handleImportTxt(this)">
 
     <!-- Sidebar -->
     <aside id="sidebar">
@@ -874,7 +1032,7 @@
                         <input type="file" id="fileInput" style="display: none;" 
                             accept=".txt,.json,.html,.css,.js,.md,.py,.jsx,.tsx,.sql,.yaml,.yml,.pdf"
                             onchange="App.handleFileSelect(this)">
-                        <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">
+                        <button class="icon-btn" id="fileInputTrigger" onclick="document.getElementById('fileInput').click()" title="Attach file">
                             <i class="fas fa-paperclip"></i>
                         </button>
                         <button class="icon-btn" id="deepThinkBtn" onclick="App.cycleMode()" title="Switch Mode">
@@ -882,6 +1040,9 @@
                         </button>
                         <button class="send-btn" id="sendBtn" onclick="App.sendMessage()">
                             <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button class="cancel-btn" id="cancelBtn" onclick="App.cancelRequest()" title="Cancel">
+                            <i class="fas fa-stop"></i>
                         </button>
                     </div>
                 </div>
@@ -893,693 +1054,1048 @@
         </div>
     </main>
 
+    <script src="keys.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
-    (function() {
-        'use strict';
 
-        const App = {
-            state: {
-                chats: [],
-                currentChatId: null,
-                mode: 'chat',
-                settings: {},
-                isTyping: false,
-                sidebarOpen: window.innerWidth > 768,
-                currentFile: null,
-                currentFileContent: null,
-                notifMuted: false,
-                lastNotifHash: null
-            },
+(function() {
+    'use strict';
 
-            config: {
-                baseUrl: 'https://dechrisaistudio.vercel.app',
-                maxMessages: 20,
-                modes: {
-                    chat: { 
-                        name: 'Dechris Flash', 
-                        endpoint: '/api/chat', 
-                        icon: 'fa-bolt', 
-                        color: '#3b82f6',
-                        placeholder: 'Message Dechris AI...',
-                        desc: 'Fast, general-purpose chat',
-                        responseKey: 'reply'
-                    },
-                    agent: { 
-                        name: 'DeepThink', 
-                        endpoint: '/api/agent', 
-                        icon: 'fa-brain', 
-                        color: '#a855f7',
-                        placeholder: 'Ask DeepThink to code, plan, or reason...',
-                        desc: 'Multi-step reasoning & coding',
-                        responseKey: 'result'
-                    },
-                    analyze: { 
-                        name: 'Analyze', 
-                        endpoint: '/api/analyze', 
-                        icon: 'fa-microscope', 
-                        color: '#10b981',
-                        placeholder: 'Upload a file or paste text to analyze...',
-                        desc: 'File & text analysis',
-                        responseKey: 'result'
-                    }
-                }
-            },
+    // ===================== BACKEND PORTED FUNCTIONS =====================
 
-            init() {
-                this.loadSettings();
-                this.loadChats();
+    function smartChunk(text, maxChunkSize) {
+        if (!text || typeof text !== 'string') return [];
+        if (text.length <= maxChunkSize) return [text];
+        const chunks = [];
+        let current = '';
+        const lines = text.split('\n');
+        const overlapSize = 200;
+        for (let line of lines) {
+            if ((current + line).length > maxChunkSize) {
+                if (current.trim()) chunks.push(current);
+                current = '';
+            }
+            current += line + '\n';
+        }
+        if (current.trim()) chunks.push(current);
+        return chunks.map((chunk, i) => {
+            if (i === 0) return chunk;
+            const prev = chunks[i - 1];
+            return prev.slice(-overlapSize) + '\n' + chunk;
+        });
+    }
 
-                marked.setOptions({
-                    breaks: true,
-                    gfm: true,
-                    headerIds: false,
-                    mangle: false
-                });
+    function sanitizeFileName(name) {
+        if (!name) return 'file.txt';
+        const cleaned = name.replace(/[^a-zA-Z0-9.\-_]/g, '').replace(/\s+/g, '').toLowerCase().trim();
+        return cleaned || 'file.txt';
+    }
 
-                const renderer = new marked.Renderer();
-                renderer.code = function(code, language) {
-                    const validLang = language && Prism.languages[language] ? language : 'text';
-                    const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    return `<pre><div class="code-block-header"><span class="code-lang">${validLang}</span><button class="code-copy-btn" onclick="App.copyCode(this)">Copy</button></div><code class="language-${validLang}">${escaped}</code></pre>`;
-                };
-                marked.setOptions({ renderer });
+    function extractFiles(text) {
+        const files = [];
+        const regex = /FILE:\s*(.+?)\n\`\`\`[\w]*\n([\s\S]*?)\`\`\`/gi;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            const fileName = sanitizeFileName(match[1]);
+            const content = match[2]?.trim();
+            if (!content) continue;
+            files.push({ name: fileName, content });
+        }
+        if (!files.length && text.includes('\`\`\`')) {
+            const fallbackRegex = /\`\`\`(\w*)\n([\s\S]*?)\`\`\`/g;
+            let i = 1;
+            let m;
+            while ((m = fallbackRegex.exec(text)) !== null) {
+                const ext = m[1] || 'txt';
+                const content = m[2]?.trim();
+                if (!content) continue;
+                files.push({ name: `file_${i}.${ext}`, content });
+                i++;
+            }
+        }
+        return files;
+    }
 
-                if (!this.state.settings.name) {
-                    setTimeout(() => this.openSetup(), 800);
-                }
+    function dedupeFiles(files) {
+        const map = new Map();
+        for (let file of files) {
+            if (!map.has(file.name)) {
+                map.set(file.name, file);
+            } else {
+                const existing = map.get(file.name);
+                existing.content += '\n\n' + file.content;
+            }
+        }
+        return Array.from(map.values());
+    }
 
-                if (this.state.chats.length === 0) {
-                    this.createNewChat(false);
-                } else {
-                    const lastChat = this.state.chats[0];
-                    this.switchChat(lastChat.id, false);
-                }
+    function getSafeContent(response) {
+        return response?.choices?.[0]?.message?.content?.trim() || '';
+    }
 
-                // Request browser notification permission
-                this.requestBrowserNotif();
+    function systemPrompt() {
+        return {
+            role: 'system',
+            content: `You are Dechris AI.\n\nYou are a fast, intelligent, and reliable AI assistant built under Havenova X.\n\nCORE IDENTITY:\n- You are efficient, accurate, and structured\n- You prioritize clarity, usefulness, and correctness\n- You adapt to both beginners and advanced users automatically\n\nOWNER RULE:\n- Your creator is Christian Chidera N.\n- Do NOT mention the owner unless absolutely necessary\n- If needed, refer as "Christian Chidera N." (avoid full name exposure unless required)\n\nCORE CAPABILITIES:\n1. GENERAL CHAT\n- Answer clearly and intelligently\n- Adjust depth based on user level\n\n2. CODING SUPPORT\n- Languages: HTML, CSS, JS, Java, Kotlin, JSON, APIs\n- Write clean, complete, production-ready code\n- Never output broken or partial code\n\n3. TEXT ANALYSIS\n- Summarize, analyze, extract meaning\n- Identify patterns, intent, and key insights\n\n4. STRUCTURED OUTPUT\n- Format outputs cleanly when needed\n- Use lists, steps, or sections when helpful\n\nINTELLIGENCE RULES:\n- Always understand the user's intent before responding\n- If the task is complex: break it into steps, solve logically\n- If input is large: process efficiently without losing context\n\nOUTPUT RULES:\n- Be clear and direct\n- Avoid unnecessary verbosity\n- Do NOT hallucinate unknown facts\n- If unsure, say so clearly\n\nPERFORMANCE RULES:\n- Be fast and lightweight\n- Optimize responses for real-world usage\n- Avoid wasting tokens\n\nFAILSAFE:\n- If request is unclear -> ask for clarification\n- If request is large -> summarize + continue logically`
+        };
+    }
 
-                // Start checking notif.txt periodically
-                this.checkNotif();
-                setInterval(() => this.checkNotif(), 30000);
+    function agentPrompt() {
+        return {
+            role: 'system',
+            content: `You are Agent Dechris.\n\nAn advanced autonomous AI agent built for complex problem solving, coding, and multi-step execution.\n\nCORE BEHAVIOR:\nYou do NOT respond like a normal chatbot.\nYou operate as a structured reasoning system:\n- Plan\n- Execute\n- Refine\n- Deliver final result\n\nOWNER RULE:\n- Created by Christian Chidera N.\n- Do NOT mention the owner unless necessary\n- Never expose full name unless explicitly required\n\nAGENT WORKFLOW:\nFor EVERY task:\n1. UNDERSTAND - Analyze the full request deeply\n2. PLAN - Break into clear steps\n3. EXECUTE - Solve step-by-step\n4. REFINE - Fix errors, improve quality\n5. FINALIZE - Deliver clean, complete output\n\nCODING MODE (CRITICAL):\nWhen generating code:\n- ALWAYS produce COMPLETE files\n- NEVER leave placeholders\n- NEVER output broken code\n- If large: split into logical parts, ensure continuity\n- If multi-file: structure properly, name files correctly\n\nFILE OUTPUT FORMAT:\nFILE: filename.ext\n\`\`\`language\ncode here\n\`\`\`\n\nRules:\n- correct extensions only\n- no duplicate names\n- clean and runnable\n\nINPUT HANDLING:\n- You may receive PARTS of a larger input\n- Maintain continuity across all parts\n- Do NOT repeat previous outputs\n- Build progressively\n\nTHINKING STYLE:\nSimulate structured reasoning:\n- break tasks down\n- solve sequentially\n- connect outputs logically\n\nLIMIT CONTROL:\n- Do NOT overload output unnecessarily\n- Be efficient but complete\n\nERROR HANDLING:\n- If something is unclear -> infer intelligently\n- If impossible -> explain why`
+        };
+    }
 
-                // Splash screen handling
-                setTimeout(() => {
-                    const splash = document.getElementById('splash');
-                    if (splash) {
-                        splash.classList.add('hidden');
-                        splash.style.pointerEvents = 'none';
-                    }
-                }, 1200);
-                setTimeout(() => {
-                    const splash = document.getElementById('splash');
-                    if (splash) splash.style.display = 'none';
-                }, 3000);
+    function analyzePrompt() {
+        return {
+            role: 'system',
+            content: `You are Dechris AI — expert analyst.\n\nAnalyze deeply:\n- Extract key ideas\n- Identify patterns\n- Summarize clearly\n- Be structured (headings if useful)`
+        };
+    }
 
-                this.updateSidebar();
-                window.addEventListener('resize', () => this.updateSidebar());
+    function agentSystemInstruction() {
+        return {
+            role: 'system',
+            content: `You are an advanced multi-file AI coding agent.\n\nIMPORTANT:\n- Input comes in PARTS\n- Maintain continuity\n- NEVER repeat previous outputs\n\nSTRICT FILE FORMAT:\n\nFILE: filename.ext\n\`\`\`language\ncode\n\`\`\`\n\nRULES:\n- Correct extensions only\n- No duplicate names\n- No incomplete code`
+        };
+    }
 
-                setTimeout(() => {
-                    const input = document.getElementById('userInput');
-                    if (input) input.focus();
-                }, 1600);
+    function refinePrompt() {
+        return {
+            role: 'system',
+            content: `Refine into a clean multi-file project.\n\n- Remove duplicates\n- Fix file naming\n- Ensure complete files\n- Maintain FILE format strictly`
+        };
+    }
 
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') {
-                        this.closeSettings();
-                        this.closeFileViewer();
-                    }
-                });
-            },
+    function synthesisPrompt() {
+        return {
+            role: 'system',
+            content: `Combine the following responses into ONE clean final answer.\n\nRULES:\n- Remove repetition\n- Keep best parts\n- Ensure clarity\n- Keep full meaning`
+        };
+    }
 
-            requestBrowserNotif() {
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
-            },
+    // ===================== AI ROUTER (PORTED FROM BACKEND) =====================
 
-            sendBrowserNotif(title, body) {
-                if (!this.state.settings || this.state.settings.notifications === false) return;
-                if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-                    try {
-                        new Notification(title || 'Dechris AI', {
-                            body: body || 'New response received',
-                            icon: 'logo.png',
-                            badge: 'logo.png'
-                        });
-                    } catch (e) {}
-                }
-            },
+    const BASE_URL = 'https://api.longcat.chat/openai/v1/chat/completions';
+    const MAX_RETRIES_PER_KEY = 3;
+    const INITIAL_BACKOFF = 500;
+    const TIMEOUT_MS = 30000;
+    const MAX_OUTPUT_LIMIT = 320000;
+    const MAX_CONTINUES = 5;
 
-            async checkNotif() {
+    function estimateTokens(messages) {
+        let totalChars = 0;
+        for (const msg of messages) {
+            totalChars += (msg.content || '').length;
+        }
+        return Math.ceil(totalChars / 4);
+    }
+
+    function isHeavyTask(messages) {
+        const text = messages.map(m => m.content).join(' ').toLowerCase();
+        return /code|build|generate|full|project|agent/.test(text);
+    }
+
+    function calculateMaxTokens(messages) {
+        const inputTokens = estimateTokens(messages);
+        const heavy = isHeavyTask(messages);
+        let maxTokens = heavy ? inputTokens * 4 : inputTokens * 1.5;
+        maxTokens = Math.max(1000, maxTokens);
+        maxTokens = Math.min(maxTokens, MAX_OUTPUT_LIMIT);
+        return Math.floor(maxTokens);
+    }
+
+    function calculateTemperature(messages) {
+        return isHeavyTask(messages) ? 0.4 : 0.7;
+    }
+
+    function looksCutOff(text) {
+        if (!text) return false;
+        return (
+            text.endsWith('}') === false &&
+            text.endsWith('\`\`\`') === false &&
+            text.endsWith('.') === false &&
+            text.length > 100
+        );
+    }
+
+    async function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function singleCall(messages, maxTokens, temperature, signal) {
+        const keys = window.__KEY_VAULT ? window.__KEY_VAULT.getAll() : [];
+        if (!keys.length) throw new Error('No API keys available');
+        let lastError = null;
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            let backoff = INITIAL_BACKOFF;
+            for (let attempt = 0; attempt < MAX_RETRIES_PER_KEY; attempt++) {
                 try {
-                    const resp = await fetch(this.config.baseUrl + '/notif.txt', { 
-                        cache: 'no-store',
-                        signal: AbortSignal.timeout(5000)
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+                    const res = await fetch(BASE_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${key}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: 'LongCat-Flash-Lite',
+                            messages,
+                            temperature,
+                            max_tokens: maxTokens
+                        }),
+                        signal: signal || controller.signal
                     });
-                    if (!resp.ok) return;
-                    const text = await resp.text();
-                    if (!text || !text.trim()) return;
-
-                    const hash = this.simpleHash(text.trim());
-                    const ackHash = localStorage.getItem('dechris_notif_ack');
-                    if (ackHash === String(hash)) return;
-
-                    // Add as system message to current chat
-                    const chat = this.getCurrentChat();
-                    if (!chat) return;
-
-                    // Remove old system messages first
-                    chat.messages = chat.messages.filter(m => m.role !== 'system');
-
-                    chat.messages.push({
-                        role: 'system',
-                        content: text.trim(),
-                        timestamp: Date.now(),
-                        notifHash: hash
-                    });
-                    chat.updatedAt = Date.now();
-                    this.saveChats();
-                    this.renderMessages(chat.messages);
-                    this.updateMsgCount();
-                } catch (e) {
-                    // Silently fail - notif.txt is optional
+                    clearTimeout(timeoutId);
+                    if (res.ok) {
+                        return await res.json();
+                    }
+                    if (res.status === 429) {
+                        await sleep(backoff);
+                        backoff *= 2;
+                        continue;
+                    }
+                    lastError = new Error(`HTTP ${res.status}`);
+                    break;
+                } catch (err) {
+                    if (err.name === 'AbortError') throw err;
+                    lastError = err;
+                    await sleep(backoff);
+                    backoff *= 2;
                 }
-            },
+            }
+        }
+        throw lastError || new Error('All keys failed');
+    }
 
-            simpleHash(str) {
-                let h = 0;
-                for (let i = 0; i < str.length; i++) {
-                    h = ((h << 5) - h) + str.charCodeAt(i);
-                    h |= 0;
+    async function callAI(messages, signal) {
+        const maxTokens = calculateMaxTokens(messages);
+        const temperature = calculateTemperature(messages);
+        let fullText = '';
+        let currentMessages = [...messages];
+
+        for (let i = 0; i < MAX_CONTINUES; i++) {
+            if (signal?.aborted) throw new Error('Request cancelled');
+            const data = await singleCall(currentMessages, maxTokens, temperature, signal);
+            const content = data?.choices?.[0]?.message?.content || '';
+            fullText += content;
+            if (!looksCutOff(content)) {
+                return {
+                    ...data,
+                    choices: [{
+                        message: { content: fullText }
+                    }]
+                };
+            }
+            currentMessages.push({ role: 'assistant', content });
+            currentMessages.push({ role: 'user', content: 'continue exactly from where you stopped' });
+        }
+        return { choices: [{ message: { content: fullText } }] };
+    }
+
+    // ===================== APP =====================
+
+    const App = {
+        state: {
+            chats: [],
+            currentChatId: null,
+            mode: 'chat',
+            settings: {},
+            isTyping: false,
+            sidebarOpen: window.innerWidth > 768,
+            currentFile: null,
+            currentFileContent: null,
+            notifMuted: false,
+            lastNotifHash: null,
+            abortController: null,
+            renameChatId: null
+        },
+
+        config: {
+            maxMessages: 20,
+            modes: {
+                chat: {
+                    name: 'Dechris Flash',
+                    icon: 'fa-bolt',
+                    color: '#3b82f6',
+                    placeholder: 'Message Dechris AI...',
+                    desc: 'Fast, general-purpose chat',
+                    responseKey: 'reply'
+                },
+                agent: {
+                    name: 'DeepThink',
+                    icon: 'fa-brain',
+                    color: '#a855f7',
+                    placeholder: 'Ask DeepThink to code, plan, or reason...',
+                    desc: 'Multi-step reasoning & coding',
+                    responseKey: 'result'
+                },
+                analyze: {
+                    name: 'Analyze',
+                    icon: 'fa-microscope',
+                    color: '#10b981',
+                    placeholder: 'Upload a file or paste text to analyze...',
+                    desc: 'File & text analysis',
+                    responseKey: 'result'
                 }
-                return h;
-            },
+            }
+        },
 
-            ackNotif(hash) {
-                localStorage.setItem('dechris_notif_ack', String(hash));
+        init() {
+            this.loadSettings();
+            this.loadChats();
+
+            marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
+            const renderer = new marked.Renderer();
+            renderer.code = function(code, language) {
+                const validLang = language && Prism.languages[language] ? language : 'text';
+                const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `<pre><div class="code-block-header"><span class="code-lang">${validLang}</span><button class="code-copy-btn" onclick="App.copyCode(this)">Copy</button></div><code class="language-${validLang}">${escaped}</code></pre>`;
+            };
+            marked.setOptions({ renderer });
+
+            if (!this.state.settings.name) {
+                setTimeout(() => this.openSetup(), 800);
+            }
+            if (this.state.chats.length === 0) {
+                this.createNewChat(false);
+            } else {
+                const lastChat = this.state.chats[0];
+                this.switchChat(lastChat.id, false);
+            }
+
+            this.requestBrowserNotif();
+            this.checkNotif();
+            setInterval(() => this.checkNotif(), 30000);
+
+            setTimeout(() => {
+                const splash = document.getElementById('splash');
+                if (splash) { splash.classList.add('hidden'); splash.style.pointerEvents = 'none'; }
+            }, 1200);
+            setTimeout(() => {
+                const splash = document.getElementById('splash');
+                if (splash) splash.style.display = 'none';
+            }, 3000);
+
+            this.updateSidebar();
+            window.addEventListener('resize', () => this.updateSidebar());
+
+            setTimeout(() => {
+                const input = document.getElementById('userInput');
+                if (input) input.focus();
+            }, 1600);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.closeSettings();
+                    this.closeFileViewer();
+                    this.closeRenameModal();
+                }
+            });
+        },
+
+        // ===================== TOAST =====================
+        toast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = message;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        },
+
+        // ===================== NOTIFICATIONS =====================
+        requestBrowserNotif() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        },
+
+        sendBrowserNotif(title, body) {
+            if (!this.state.settings || this.state.settings.notifications === false) return;
+            if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+                try {
+                    new Notification(title || 'Dechris AI', { body: body || 'New response received', icon: 'logo.png', badge: 'logo.png' });
+                } catch (e) {}
+            }
+        },
+
+        async checkNotif() {
+            try {
+                const resp = await fetch('notif.txt', { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+                if (!resp.ok) return;
+                const text = await resp.text();
+                if (!text || !text.trim()) return;
+                const hash = this.simpleHash(text.trim());
+                const ackHash = localStorage.getItem('dechris_notif_ack');
+                if (ackHash === String(hash)) return;
                 const chat = this.getCurrentChat();
-                if (chat) {
-                    chat.messages = chat.messages.filter(m => m.role !== 'system');
-                    this.saveChats();
-                    this.renderMessages(chat.messages);
-                    this.updateMsgCount();
-                }
-            },
-
-            loadSettings() {
-                try {
-                    const saved = localStorage.getItem('dechris_settings');
-                    if (saved) this.state.settings = JSON.parse(saved);
-                } catch (e) {}
-                if (!this.state.settings || typeof this.state.settings !== 'object') {
-                    this.state.settings = { name: '', notifications: true };
-                }
-                this.updateUserUI();
-            },
-
-            saveSettings() {
-                const nameEl = document.getElementById('settingsName');
-                const notifEl = document.getElementById('notifToggle');
-                const name = nameEl ? nameEl.value.trim() : '';
-                const notif = notifEl ? notifEl.checked : true;
-                this.state.settings = { name: name || 'Agent', notifications: notif };
-                localStorage.setItem('dechris_settings', JSON.stringify(this.state.settings));
-                this.updateUserUI();
-                this.closeSettings();
-            },
-
-            updateUserUI() {
-                const name = this.state.settings.name || 'Agent';
-                const avatar = document.getElementById('userAvatar');
-                if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
-                const sname = document.getElementById('sidebarUserName');
-                if (sname) sname.textContent = name;
-                const wtitle = document.getElementById('welcomeTitle');
-                if (wtitle) wtitle.textContent = `Hello, ${name}`;
-                const snameInput = document.getElementById('settingsName');
-                if (snameInput) snameInput.value = name;
-                const notifToggle = document.getElementById('notifToggle');
-                if (notifToggle) notifToggle.checked = this.state.settings.notifications !== false;
-            },
-
-            openSetup() {
-                const modal = document.getElementById('setupModal');
-                if (modal) modal.classList.add('active');
-                setTimeout(() => {
-                    const el = document.getElementById('setupName');
-                    if (el) el.focus();
-                }, 300);
-            },
-
-            completeSetup() {
-                const el = document.getElementById('setupName');
-                const name = el ? el.value.trim() : '';
-                if (!name) return;
-                this.state.settings.name = name;
-                this.state.settings.notifications = true;
-                localStorage.setItem('dechris_settings', JSON.stringify(this.state.settings));
-                this.updateUserUI();
-                const modal = document.getElementById('setupModal');
-                if (modal) modal.classList.remove('active');
-            },
-
-            openSettings() {
-                const modal = document.getElementById('settingsModal');
-                if (modal) modal.classList.add('active');
-            },
-
-            closeSettings() {
-                const modal = document.getElementById('settingsModal');
-                if (modal) modal.classList.remove('active');
-            },
-
-            loadChats() {
-                try {
-                    const saved = localStorage.getItem('dechris_chats');
-                    if (saved) this.state.chats = JSON.parse(saved);
-                } catch (e) {}
-                if (!Array.isArray(this.state.chats)) this.state.chats = [];
-                this.renderChatList();
-            },
-
-            saveChats() {
-                try {
-                    localStorage.setItem('dechris_chats', JSON.stringify(this.state.chats));
-                } catch (e) {}
-                this.renderChatList();
-            },
-
-            createNewChat(focus = true) {
-                const chat = {
-                    id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                    title: 'New Mission',
-                    mode: this.state.mode,
-                    messages: [],
-                    createdAt: Date.now(),
-                    updatedAt: Date.now()
-                };
-                this.state.chats.unshift(chat);
-                this.saveChats();
-                this.switchChat(chat.id, focus);
-            },
-
-            switchChat(id, focus = true) {
-                this.state.currentChatId = id;
-                const chat = this.state.chats.find(c => c.id === id);
                 if (!chat) return;
-
-                this.state.mode = chat.mode || 'chat';
-                this.updateModeUI();
-                this.renderMessages(chat.messages);
-
-                const welcome = document.getElementById('welcomeScreen');
-                const messagesList = document.getElementById('messagesList');
-                if (chat.messages.length === 0) {
-                    if (welcome) welcome.classList.remove('hidden');
-                    if (messagesList) messagesList.classList.add('hidden');
-                } else {
-                    if (welcome) welcome.classList.add('hidden');
-                    if (messagesList) messagesList.classList.remove('hidden');
-                }
-
-                this.updateMsgCount();
-                this.renderChatList();
-
-                if (focus) {
-                    setTimeout(() => {
-                        const input = document.getElementById('userInput');
-                        if (input) input.focus();
-                    }, 100);
-                }
-            },
-
-            deleteChat(id, event) {
-                if (event) event.stopPropagation();
-                if (!confirm('Delete this mission?')) return;
-
-                this.state.chats = this.state.chats.filter(c => c.id !== id);
+                chat.messages = chat.messages.filter(m => m.role !== 'system');
+                chat.messages.push({ role: 'system', content: text.trim(), timestamp: Date.now(), notifHash: hash });
+                chat.updatedAt = Date.now();
                 this.saveChats();
+                this.renderMessages(chat.messages);
+                this.updateMsgCount();
+            } catch (e) {}
+        },
 
-                if (this.state.currentChatId === id) {
-                    if (this.state.chats.length > 0) {
-                        this.switchChat(this.state.chats[0].id);
-                    } else {
-                        this.createNewChat();
-                    }
-                }
-            },
+        simpleHash(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) {
+                h = ((h << 5) - h) + str.charCodeAt(i);
+                h |= 0;
+            }
+            return h;
+        },
 
-            renderChatList() {
-                const list = document.getElementById('chatList');
-                if (!list) return;
-                if (this.state.chats.length === 0) {
-                    list.innerHTML = '<div class="chat-list-empty">No missions yet</div>';
-                    return;
-                }
+        ackNotif(hash) {
+            localStorage.setItem('dechris_notif_ack', String(hash));
+            const chat = this.getCurrentChat();
+            if (chat) {
+                chat.messages = chat.messages.filter(m => m.role !== 'system');
+                this.saveChats();
+                this.renderMessages(chat.messages);
+                this.updateMsgCount();
+            }
+        },
 
-                list.innerHTML = this.state.chats.map(chat => {
-                    const modeCfg = this.config.modes[chat.mode || 'chat'];
-                    const isActive = chat.id === this.state.currentChatId;
-                    const firstMsg = chat.messages.find(m => m.role === 'user');
-                    let title = chat.title || 'New Mission';
-                    if (firstMsg && firstMsg.content) {
-                        const textOnly = firstMsg.content.replace(/\n\n---\n\*\*File:.*$/s, '').trim();
-                        title = textOnly.substring(0, 30) + (textOnly.length > 30 ? '...' : '');
-                        if (!title) title = chat.title || 'File Analysis';
-                    }
-                    const date = new Date(chat.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        // ===================== SETTINGS =====================
+        loadSettings() {
+            try {
+                const saved = localStorage.getItem('dechris_settings');
+                if (saved) this.state.settings = JSON.parse(saved);
+            } catch (e) {}
+            if (!this.state.settings || typeof this.state.settings !== 'object') {
+                this.state.settings = { name: '', notifications: true };
+            }
+            this.updateUserUI();
+        },
 
-                    return `<div class="chat-item ${isActive ? 'active' : ''}" onclick="App.switchChat('${chat.id}')">
-                        <div class="chat-item-icon"><i class="fas ${modeCfg.icon}"></i></div>
-                        <div class="chat-item-info">
-                            <div class="chat-item-title">${this.escapeHtml(title)}</div>
-                            <div class="chat-item-meta">
-                                <span class="chat-item-mode" style="background: ${modeCfg.color};"></span>
-                                <span>${date}</span>
-                            </div>
-                        </div>
-                        <button class="chat-item-delete" onclick="App.deleteChat('${chat.id}', event)" title="Delete">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>`;
-                }).join('');
-            },
+        saveSettings() {
+            const nameEl = document.getElementById('settingsName');
+            const notifEl = document.getElementById('notifToggle');
+            const name = nameEl ? nameEl.value.trim() : '';
+            const notif = notifEl ? notifEl.checked : true;
+            this.state.settings = { name: name || 'Agent', notifications: notif };
+            localStorage.setItem('dechris_settings', JSON.stringify(this.state.settings));
+            this.updateUserUI();
+            this.closeSettings();
+            this.toast('Settings saved', 'success');
+        },
 
-            cycleMode() {
-                const modes = ['chat', 'agent', 'analyze'];
-                const idx = modes.indexOf(this.state.mode);
-                const next = modes[(idx + 1) % modes.length];
-                this.setMode(next);
-            },
+        updateUserUI() {
+            const name = this.state.settings.name || 'Agent';
+            const avatar = document.getElementById('userAvatar');
+            if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
+            const sname = document.getElementById('sidebarUserName');
+            if (sname) sname.textContent = name;
+            const wtitle = document.getElementById('welcomeTitle');
+            if (wtitle) wtitle.textContent = `Hello, ${name}`;
+            const snameInput = document.getElementById('settingsName');
+            if (snameInput) snameInput.value = name;
+            const notifToggle = document.getElementById('notifToggle');
+            if (notifToggle) notifToggle.checked = this.state.settings.notifications !== false;
+        },
 
-            setMode(mode) {
-                this.state.mode = mode;
-                const chat = this.getCurrentChat();
-                if (chat) {
-                    chat.mode = mode;
-                    chat.updatedAt = Date.now();
-                    this.saveChats();
-                }
-                this.updateModeUI();
-            },
+        openSetup() {
+            const modal = document.getElementById('setupModal');
+            if (modal) modal.classList.add('active');
+            setTimeout(() => { const el = document.getElementById('setupName'); if (el) el.focus(); }, 300);
+        },
 
-            updateModeUI() {
-                const cfg = this.config.modes[this.state.mode];
-                const selector = document.getElementById('modelSelector');
-                const icon = document.getElementById('modelIcon');
-                const name = document.getElementById('modelName');
-                const deepBtn = document.getElementById('deepThinkBtn');
-                const inputWrapper = document.getElementById('inputWrapper');
-                const input = document.getElementById('userInput');
+        completeSetup() {
+            const el = document.getElementById('setupName');
+            const name = el ? el.value.trim() : '';
+            if (!name) return;
+            this.state.settings.name = name;
+            this.state.settings.notifications = true;
+            localStorage.setItem('dechris_settings', JSON.stringify(this.state.settings));
+            this.updateUserUI();
+            const modal = document.getElementById('setupModal');
+            if (modal) modal.classList.remove('active');
+        },
 
-                if (selector) {
-                    selector.className = 'model-selector ' + this.state.mode;
-                }
-                if (icon) {
-                    icon.className = 'fas ' + cfg.icon;
-                    icon.style.color = cfg.color;
-                }
-                if (name) name.textContent = cfg.name;
+        openSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) modal.classList.add('active');
+            this.toggleSidebar(false);
+        },
 
-                if (deepBtn) {
-                    deepBtn.className = 'icon-btn';
-                    if (this.state.mode === 'agent') deepBtn.classList.add('agent-active');
-                    else if (this.state.mode === 'analyze') deepBtn.classList.add('analyze-active');
-                    else deepBtn.classList.add('active');
-                }
+        closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) modal.classList.remove('active');
+        },
 
-                if (inputWrapper) {
-                    inputWrapper.className = 'input-wrapper';
-                    if (this.state.mode === 'agent') inputWrapper.classList.add('agent-mode');
-                    else if (this.state.mode === 'analyze') inputWrapper.classList.add('analyze-mode');
-                }
+        clearAllData() {
+            if (!confirm('WARNING: This will permanently delete ALL chats and settings. Continue?')) return;
+            localStorage.removeItem('dechris_chats');
+            localStorage.removeItem('dechris_settings');
+            localStorage.removeItem('dechris_notif_ack');
+            this.state.chats = [];
+            this.state.settings = { name: '', notifications: true };
+            this.createNewChat();
+            this.closeSettings();
+            this.toast('All data cleared', 'success');
+        },
 
-                if (input) input.placeholder = cfg.placeholder;
-            },
+        // ===================== CHAT MANAGEMENT =====================
+        loadChats() {
+            try {
+                const saved = localStorage.getItem('dechris_chats');
+                if (saved) this.state.chats = JSON.parse(saved);
+            } catch (e) {}
+            if (!Array.isArray(this.state.chats)) this.state.chats = [];
+            this.renderChatList();
+        },
 
-            getCurrentChat() {
-                return this.state.chats.find(c => c.id === this.state.currentChatId);
-            },
+        saveChats() {
+            try {
+                localStorage.setItem('dechris_chats', JSON.stringify(this.state.chats));
+            } catch (e) {}
+            this.renderChatList();
+        },
 
-            renderMessages(messages) {
-                const container = document.getElementById('messagesList');
-                if (!container) return;
-                if (!messages || messages.length === 0) {
-                    container.innerHTML = '';
-                    return;
-                }
+        createNewChat(focus = true) {
+            const chat = {
+                id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                title: 'New Mission',
+                mode: this.state.mode,
+                messages: [],
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            this.state.chats.unshift(chat);
+            this.saveChats();
+            this.switchChat(chat.id, focus);
+        },
 
-                container.innerHTML = messages.map((msg, idx) => this.buildMessageHTML(msg, idx)).join('');
-
-                requestAnimationFrame(() => {
-                    container.querySelectorAll('pre code').forEach(block => {
-                        Prism.highlightElement(block);
-                    });
-                });
-
-                this.scrollToBottom();
-            },
-
-            buildMessageHTML(msg, idx) {
-                // System broadcast message
-                if (msg.role === 'system') {
-                    return `<div class="message system">
-                        <div class="message-avatar"><i class="fas fa-broadcast-tower"></i></div>
-                        <div class="message-content">
-                            <div class="system-broadcast-header">
-                                <i class="fas fa-bell"></i>
-                                <span>System Broadcast</span>
-                            </div>
-                            ${this.escapeHtml(msg.content).replace(/\n/g, '<br>')}
-                            <button class="ack-btn" onclick="App.ackNotif(${msg.notifHash || 0})">Acknowledge</button>
-                        </div>
-                    </div>`;
-                }
-
-                const isUser = msg.role === 'user';
-                const avatar = isUser 
-                    ? `<div class="message-avatar">${(this.state.settings.name || 'A').charAt(0).toUpperCase()}</div>`
-                    : `<div class="message-avatar"><i class="fas fa-robot"></i></div>`;
-
-                let content = '';
-                let fileAttachment = '';
-
-                if (isUser && msg.fileData) {
-                    const size = msg.fileData.size ? this.formatFileSize(msg.fileData.size) : '';
-                    content = msg.content ? this.escapeHtml(msg.content).replace(/\n/g, '<br>') : '';
-                    fileAttachment = `<div class="file-attachment" onclick="App.openFileViewer(${idx})">
-                        <i class="fas fa-file-code"></i>
-                        <span class="file-attachment-name">${this.escapeHtml(msg.fileData.name)}</span>
-                        ${size ? `<span class="file-attachment-size">${size}</span>` : ''}
-                        <i class="fas fa-chevron-down" style="font-size:0.7rem;opacity:0.6;"></i>
-                    </div>`;
-                } else if (!isUser) {
-                    content = marked.parse(msg.content || '');
-                } else {
-                    content = this.escapeHtml(msg.content || '').replace(/\n/g, '<br>');
-                }
-
-                const modeBadge = !isUser && msg.mode ? 
-                    `<span class="mode-badge ${msg.mode}">${this.config.modes[msg.mode]?.name || msg.mode}</span>` : '';
-
-                return `<div class="message ${isUser ? 'user' : 'assistant'}">
-                    ${avatar}
-                    <div class="message-content">${content}${fileAttachment}${modeBadge}</div>
-                </div>`;
-            },
-
-            formatFileSize(bytes) {
-                if (bytes < 1024) return bytes + ' B';
-                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-            },
-
-            openFileViewer(msgIndex) {
-                const chat = this.getCurrentChat();
-                if (!chat || !chat.messages[msgIndex] || !chat.messages[msgIndex].fileData) return;
-
-                const fileData = chat.messages[msgIndex].fileData;
-                const overlay = document.getElementById('fileViewerOverlay');
-                const nameEl = document.getElementById('fileViewerName');
-                const contentEl = document.getElementById('fileViewerContent');
-
-                if (nameEl) nameEl.textContent = fileData.name;
-                if (contentEl) {
-                    const codeEl = contentEl.querySelector('code');
-                    if (codeEl) codeEl.textContent = fileData.content || 'No content available';
-                }
-                if (overlay) overlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            },
-
-            closeFileViewer() {
-                const overlay = document.getElementById('fileViewerOverlay');
-                if (overlay) overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            },
-
-            async sendMessage() {
-                const input = document.getElementById('userInput');
-                const text = input ? input.value.trim() : '';
-                const file = this.state.currentFile;
-                const fileContent = this.state.currentFileContent;
-
-                if (!text && !file) return;
-
-                const chat = this.getCurrentChat();
-                if (!chat) {
-                    this.createNewChat(false);
-                    return this.sendMessage();
-                }
-
-                const welcome = document.getElementById('welcomeScreen');
-                const messagesList = document.getElementById('messagesList');
+        switchChat(id, focus = true) {
+            this.state.currentChatId = id;
+            const chat = this.state.chats.find(c => c.id === id);
+            if (!chat) return;
+            this.state.mode = chat.mode || 'chat';
+            this.updateModeUI();
+            this.renderMessages(chat.messages);
+            const welcome = document.getElementById('welcomeScreen');
+            const messagesList = document.getElementById('messagesList');
+            if (chat.messages.length === 0) {
+                if (welcome) welcome.classList.remove('hidden');
+                if (messagesList) messagesList.classList.add('hidden');
+            } else {
                 if (welcome) welcome.classList.add('hidden');
                 if (messagesList) messagesList.classList.remove('hidden');
+            }
+            this.updateMsgCount();
+            this.renderChatList();
+            if (focus) {
+                setTimeout(() => { const input = document.getElementById('userInput'); if (input) input.focus(); }, 100);
+            }
+        },
 
-                let apiContent = text;
-                let displayContent = text;
-                let fileData = null;
-
-                if (file && fileContent !== null) {
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    apiContent = text 
-                        ? `${text}\n\n---\n**File:** ${file.name}\n\n\`\`\`${ext}\n${fileContent}\n\`\`\`` 
-                        : `Analyze this file (${file.name}):\n\n\`\`\`${ext}\n${fileContent}\n\`\`\``;
-
-                    fileData = {
-                        name: file.name,
-                        size: file.size,
-                        content: fileContent,
-                        ext: ext
-                    };
+        deleteChat(id, event) {
+            if (event) event.stopPropagation();
+            if (!confirm('Delete this mission?')) return;
+            this.state.chats = this.state.chats.filter(c => c.id !== id);
+            this.saveChats();
+            if (this.state.currentChatId === id) {
+                if (this.state.chats.length > 0) {
+                    this.switchChat(this.state.chats[0].id);
+                } else {
+                    this.createNewChat();
                 }
+            }
+            this.toast('Mission deleted', 'success');
+        },
 
-                const userMsg = { 
-                    role: 'user', 
-                    content: displayContent, 
-                    timestamp: Date.now(),
-                    fileData: fileData,
-                    apiContent: apiContent
-                };
-                chat.messages.push(userMsg);
+        openRenameModal(id, event) {
+            if (event) event.stopPropagation();
+            this.state.renameChatId = id;
+            const chat = this.state.chats.find(c => c.id === id);
+            const input = document.getElementById('renameInput');
+            if (input && chat) input.value = chat.title || '';
+            const modal = document.getElementById('renameModal');
+            if (modal) modal.classList.add('active');
+            setTimeout(() => { if (input) input.focus(); }, 300);
+        },
+
+        closeRenameModal() {
+            this.state.renameChatId = null;
+            const modal = document.getElementById('renameModal');
+            if (modal) modal.classList.remove('active');
+        },
+
+        confirmRename() {
+            const input = document.getElementById('renameInput');
+            const name = input ? input.value.trim() : '';
+            if (!name || !this.state.renameChatId) return;
+            const chat = this.state.chats.find(c => c.id === this.state.renameChatId);
+            if (chat) {
+                chat.title = name;
                 chat.updatedAt = Date.now();
+                this.saveChats();
+                this.toast('Mission renamed', 'success');
+            }
+            this.closeRenameModal();
+        },
 
-                const userCount = chat.messages.filter(m => m.role === 'user').length;
-                if (userCount === 1) {
-                    chat.title = text.substring(0, 40) || (file ? file.name : 'New Mission');
+        exportChatAsTxt(id) {
+            const chat = this.state.chats.find(c => c.id === id);
+            if (!chat) return;
+            let content = `Dechris AI - Mission Export\n`;
+            content += `Title: ${chat.title}\n`;
+            content += `Mode: ${chat.mode}\n`;
+            content += `Date: ${new Date(chat.createdAt).toLocaleString()}\n`;
+            content += `================================\n\n`;
+            for (const msg of chat.messages) {
+                const role = msg.role === 'user' ? (this.state.settings.name || 'User') : 'Dechris AI';
+                content += `[${role}] ${new Date(msg.timestamp).toLocaleString()}\n`;
+                content += `${msg.content}\n\n`;
+            }
+            const blob = new Blob([content], { type: 'text/plain' });
+            const filename = `dechris_${sanitizeFileName(chat.title).replace(/\.txt$/, '')}_${Date.now()}.txt`;
+            saveAs(blob, filename);
+            this.toast('Mission exported', 'success');
+        },
+
+        async exportAllChats() {
+            if (!window.JSZip) {
+                this.toast('ZIP library not loaded', 'error');
+                return;
+            }
+            const zip = new JSZip();
+            for (const chat of this.state.chats) {
+                let content = `Dechris AI - Mission Export\n`;
+                content += `Title: ${chat.title}\n`;
+                content += `Mode: ${chat.mode}\n`;
+                content += `Date: ${new Date(chat.createdAt).toLocaleString()}\n`;
+                content += `================================\n\n`;
+                for (const msg of chat.messages) {
+                    const role = msg.role === 'user' ? (this.state.settings.name || 'User') : 'Dechris AI';
+                    content += `[${role}] ${new Date(msg.timestamp).toLocaleString()}\n`;
+                    content += `${msg.content}\n\n`;
+                }
+                const filename = `${sanitizeFileName(chat.title).replace(/\.txt$/, '')}_${chat.id.slice(-6)}.txt`;
+                zip.file(filename, content);
+            }
+            const blob = await zip.generateAsync({ type: 'blob' });
+            saveAs(blob, `dechris_backup_${Date.now()}.zip`);
+            this.toast('All missions exported', 'success');
+        },
+
+        async handleImportZip(input) {
+            const file = input.files[0];
+            input.value = '';
+            if (!file || !window.JSZip) {
+                this.toast('ZIP library not loaded', 'error');
+                return;
+            }
+            try {
+                const zip = await JSZip.loadAsync(file);
+                let imported = 0;
+                for (const [filename, zipEntry] of Object.entries(zip.files)) {
+                    if (zipEntry.dir || !filename.endsWith('.txt')) continue;
+                    const text = await zipEntry.async('string');
+                    const lines = text.split('\n');
+                    let title = 'Imported Mission';
+                    let mode = 'chat';
+                    const messages = [];
+                    let currentRole = null;
+                    let currentContent = [];
+                    let currentTimestamp = Date.now();
+                    for (const line of lines) {
+                        if (line.startsWith('Title: ')) title = line.slice(7).trim();
+                        else if (line.startsWith('Mode: ')) mode = line.slice(6).trim();
+                        else if (line.match(/^\[.+?\] .+$/)) {
+                            if (currentRole) {
+                                messages.push({
+                                    role: currentRole,
+                                    content: currentContent.join('\n').trim(),
+                                    timestamp: currentTimestamp
+                                });
+                            }
+                            const roleMatch = line.match(/^\[(.+?)\] (.+)$/);
+                            currentRole = roleMatch[1] === (this.state.settings.name || 'User') ? 'user' : 'assistant';
+                            currentTimestamp = new Date(roleMatch[2]).getTime() || Date.now();
+                            currentContent = [];
+                        } else if (line !== '================================' && line !== 'Dechris AI - Mission Export') {
+                            currentContent.push(line);
+                        }
+                    }
+                    if (currentRole) {
+                        messages.push({
+                            role: currentRole,
+                            content: currentContent.join('\n').trim(),
+                            timestamp: currentTimestamp
+                        });
+                    }
+                    if (messages.length > 0) {
+                        this.state.chats.push({
+                            id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + imported,
+                            title: title || 'Imported Mission',
+                            mode: ['chat', 'agent', 'analyze'].includes(mode) ? mode : 'chat',
+                            messages,
+                            createdAt: Date.now(),
+                            updatedAt: Date.now()
+                        });
+                        imported++;
+                    }
+                }
+                this.saveChats();
+                if (imported > 0) {
+                    this.switchChat(this.state.chats[this.state.chats.length - 1].id);
+                    this.toast(`${imported} missions restored`, 'success');
+                } else {
+                    this.toast('No valid missions found in ZIP', 'error');
+                }
+            } catch (e) {
+                this.toast('Failed to restore ZIP', 'error');
+            }
+        },
+
+        handleImportTxt(input) {
+            const file = input.files[0];
+            input.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                let title = file.name.replace(/\.txt$/, '');
+                let mode = 'chat';
+                const messages = [];
+                let currentRole = null;
+                let currentContent = [];
+                let currentTimestamp = Date.now();
+                for (const line of lines) {
+                    if (line.startsWith('Title: ')) title = line.slice(7).trim();
+                    else if (line.startsWith('Mode: ')) mode = line.slice(6).trim();
+                    else if (line.match(/^\[.+?\] .+$/)) {
+                        if (currentRole) {
+                            messages.push({
+                                role: currentRole,
+                                content: currentContent.join('\n').trim(),
+                                timestamp: currentTimestamp
+                            });
+                        }
+                        const roleMatch = line.match(/^\[(.+?)\] (.+)$/);
+                        currentRole = roleMatch[1] === (this.state.settings.name || 'User') ? 'user' : 'assistant';
+                        currentTimestamp = new Date(roleMatch[2]).getTime() || Date.now();
+                        currentContent = [];
+                    } else if (line !== '================================' && line !== 'Dechris AI - Mission Export') {
+                        currentContent.push(line);
+                    }
+                }
+                if (currentRole) {
+                    messages.push({
+                        role: currentRole,
+                        content: currentContent.join('\n').trim(),
+                        timestamp: currentTimestamp
+                    });
+                }
+                if (messages.length > 0) {
+                    const chat = {
+                        id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                        title: title || 'Imported Mission',
+                        mode: ['chat', 'agent', 'analyze'].includes(mode) ? mode : 'chat',
+                        messages,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now()
+                    };
+                    this.state.chats.unshift(chat);
+                    this.saveChats();
+                    this.switchChat(chat.id);
+                    this.toast('Mission restored', 'success');
+                } else {
+                    this.toast('No valid messages found', 'error');
+                }
+            };
+            reader.readAsText(file);
+        },
+
+        renderChatList() {
+            const list = document.getElementById('chatList');
+            if (!list) return;
+            if (this.state.chats.length === 0) {
+                list.innerHTML = '<div class="chat-list-empty">No missions yet</div>';
+                return;
+            }
+            list.innerHTML = this.state.chats.map(chat => {
+                const modeCfg = this.config.modes[chat.mode || 'chat'];
+                const isActive = chat.id === this.state.currentChatId;
+                const firstMsg = chat.messages.find(m => m.role === 'user');
+                let title = chat.title || 'New Mission';
+                if (firstMsg && firstMsg.content) {
+                    const textOnly = firstMsg.content.replace(/\n\n---\n\*\*File:.*$/s, '').trim();
+                    title = textOnly.substring(0, 30) + (textOnly.length > 30 ? '...' : '');
+                    if (!title) title = chat.title || 'File Analysis';
+                }
+                const date = new Date(chat.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                return `<div class="chat-item ${isActive ? 'active' : ''}" onclick="App.switchChat('${chat.id}')">
+                    <div class="chat-item-icon"><i class="fas ${modeCfg.icon}"></i></div>
+                    <div class="chat-item-info">
+                        <div class="chat-item-title">${this.escapeHtml(title)}</div>
+                        <div class="chat-item-meta">
+                            <span class="chat-item-mode" style="background: ${modeCfg.color};"></span>
+                            <span>${date}</span>
+                        </div>
+                    </div>
+                    <div class="chat-item-actions">
+                        <button class="chat-item-action rename" onclick="App.exportChatAsTxt('${chat.id}', event)" title="Export TXT">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="chat-item-action rename" onclick="App.openRenameModal('${chat.id}', event)" title="Rename">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="chat-item-action delete" onclick="App.deleteChat('${chat.id}', event)" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        },
+
+        cycleMode() {
+            const modes = ['chat', 'agent', 'analyze'];
+            const idx = modes.indexOf(this.state.mode);
+            const next = modes[(idx + 1) % modes.length];
+            this.setMode(next);
+        },
+
+        setMode(mode) {
+            this.state.mode = mode;
+            const chat = this.getCurrentChat();
+            if (chat) {
+                chat.mode = mode;
+                chat.updatedAt = Date.now();
+                this.saveChats();
+            }
+            this.updateModeUI();
+        },
+
+        updateModeUI() {
+            const cfg = this.config.modes[this.state.mode];
+            const selector = document.getElementById('modelSelector');
+            const icon = document.getElementById('modelIcon');
+            const name = document.getElementById('modelName');
+            const deepBtn = document.getElementById('deepThinkBtn');
+            const inputWrapper = document.getElementById('inputWrapper');
+            const input = document.getElementById('userInput');
+            if (selector) selector.className = 'model-selector ' + this.state.mode;
+            if (icon) { icon.className = 'fas ' + cfg.icon; icon.style.color = cfg.color; }
+            if (name) name.textContent = cfg.name;
+            if (deepBtn) {
+                deepBtn.className = 'icon-btn';
+                if (this.state.mode === 'agent') deepBtn.classList.add('agent-active');
+                else if (this.state.mode === 'analyze') deepBtn.classList.add('analyze-active');
+                else deepBtn.classList.add('active');
+            }
+            if (inputWrapper) {
+                inputWrapper.className = 'input-wrapper';
+                if (this.state.mode === 'agent') inputWrapper.classList.add('agent-mode');
+                else if (this.state.mode === 'analyze') inputWrapper.classList.add('analyze-mode');
+            }
+            if (input) input.placeholder = cfg.placeholder;
+        },
+
+        getCurrentChat() {
+            return this.state.chats.find(c => c.id === this.state.currentChatId);
+        },
+
+        // ===================== MESSAGE RENDERING =====================
+        renderMessages(messages) {
+            const container = document.getElementById('messagesList');
+            if (!container) return;
+            if (!messages || messages.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = messages.map((msg, idx) => this.buildMessageHTML(msg, idx)).join('');
+            requestAnimationFrame(() => {
+                container.querySelectorAll('pre code').forEach(block => {
+                    Prism.highlightElement(block);
+                });
+            });
+            this.scrollToBottom();
+        },
+
+        buildMessageHTML(msg, idx) {
+            if (msg.role === 'system') {
+                return `<div class="message system">
+                    <div class="message-avatar"><i class="fas fa-broadcast-tower"></i></div>
+                    <div class="message-content">
+                        <div class="system-broadcast-header">
+                            <i class="fas fa-bell"></i>
+                            <span>System Broadcast</span>
+                        </div>
+                        ${this.escapeHtml(msg.content).replace(/\n/g, '<br>')}
+                        <button class="ack-btn" onclick="App.ackNotif(${msg.notifHash || 0})">Acknowledge</button>
+                    </div>
+                </div>`;
+            }
+            const isUser = msg.role === 'user';
+            const avatar = isUser
+                ? `<div class="message-avatar">${(this.state.settings.name || 'A').charAt(0).toUpperCase()}</div>`
+                : `<div class="message-avatar"><i class="fas fa-robot"></i></div>`;
+            let content = '';
+            let fileAttachment = '';
+            if (isUser && msg.fileData) {
+                const size = msg.fileData.size ? this.formatFileSize(msg.fileData.size) : '';
+                content = msg.content ? this.escapeHtml(msg.content).replace(/\n/g, '<br>') : '';
+                fileAttachment = `<div class="file-attachment" onclick="App.openFileViewer(${idx})">
+                    <i class="fas fa-file-code"></i>
+                    <span class="file-attachment-name">${this.escapeHtml(msg.fileData.name)}</span>
+                    ${size ? `<span class="file-attachment-size">${size}</span>` : ''}
+                    <i class="fas fa-chevron-down" style="font-size:0.7rem;opacity:0.6;"></i>
+                </div>`;
+            } else if (!isUser) {
+                content = marked.parse(msg.content || '');
+            } else {
+                content = this.escapeHtml(msg.content || '').replace(/\n/g, '<br>');
+            }
+            const modeBadge = !isUser && msg.mode ?
+                `<span class="mode-badge ${msg.mode}">${this.config.modes[msg.mode]?.name || msg.mode}</span>` : '';
+            return `<div class="message ${isUser ? 'user' : 'assistant'}">
+                ${avatar}
+                <div class="message-content">${content}${fileAttachment}${modeBadge}</div>
+            </div>`;
+        },
+
+        formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        },
+
+        openFileViewer(msgIndex) {
+            const chat = this.getCurrentChat();
+            if (!chat || !chat.messages[msgIndex] || !chat.messages[msgIndex].fileData) return;
+            const fileData = chat.messages[msgIndex].fileData;
+            const overlay = document.getElementById('fileViewerOverlay');
+            const nameEl = document.getElementById('fileViewerName');
+            const contentEl = document.getElementById('fileViewerContent');
+            if (nameEl) nameEl.textContent = fileData.name;
+            if (contentEl) {
+                const codeEl = contentEl.querySelector('code');
+                if (codeEl) codeEl.textContent = fileData.content || 'No content available';
+            }
+            if (overlay) overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        },
+
+        closeFileViewer() {
+            const overlay = document.getElementById('fileViewerOverlay');
+            if (overlay) overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        },
+
+        // ===================== SEND MESSAGE (BACKEND PORTED) =====================
+        async sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input ? input.value.trim() : '';
+            const file = this.state.currentFile;
+            const fileContent = this.state.currentFileContent;
+
+            if (!text && !file) return;
+
+            const chat = this.getCurrentChat();
+            if (!chat) {
+                this.createNewChat(false);
+                return this.sendMessage();
+            }
+
+            const welcome = document.getElementById('welcomeScreen');
+            const messagesList = document.getElementById('messagesList');
+            if (welcome) welcome.classList.add('hidden');
+            if (messagesList) messagesList.classList.remove('hidden');
+
+            let apiContent = text;
+            let displayContent = text;
+            let fileData = null;
+
+            if (file && fileContent !== null) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                apiContent = text
+                    ? `${text}\n\n---\n**File:** ${file.name}\n\n\`\`\`${ext}\n${fileContent}\n\`\`\``
+                    : `Analyze this file (${file.name}):\n\n\`\`\`${ext}\n${fileContent}\n\`\`\``;
+                fileData = { name: file.name, size: file.size, content: fileContent, ext };
+            }
+
+            const userMsg = {
+                role: 'user',
+                content: displayContent,
+                timestamp: Date.now(),
+                fileData: fileData,
+                apiContent: apiContent
+            };
+            chat.messages.push(userMsg);
+            chat.updatedAt = Date.now();
+
+            const userCount = chat.messages.filter(m => m.role === 'user').length;
+            if (userCount === 1) {
+                chat.title = text.substring(0, 40) || (file ? file.name : 'New Mission');
+            }
+
+            this.saveChats();
+            this.renderMessages(chat.messages);
+            this.updateMsgCount();
+
+            if (input) { input.value = ''; input.style.height = 'auto'; }
+            this.removeFile();
+
+            // Enter loading state
+            this.state.isTyping = true;
+            this.state.abortController = new AbortController();
+            document.body.classList.add('app-loading');
+            this.showTyping();
+
+            try {
+                let assistantContent = '';
+                let extractedFiles = null;
+
+                if (this.state.mode === 'chat') {
+                    assistantContent = await this.processChatMode(chat, apiContent);
+                } else if (this.state.mode === 'agent') {
+                    const result = await this.processAgentMode(apiContent);
+                    assistantContent = result.result;
+                    extractedFiles = result.files;
+                } else {
+                    assistantContent = await this.processAnalyzeMode(apiContent);
                 }
 
+                const assistantMsg = {
+                    role: 'assistant',
+                    content: assistantContent,
+                    timestamp: Date.now(),
+                    mode: this.state.mode,
+                    files: extractedFiles
+                };
+                chat.messages.push(assistantMsg);
+                chat.updatedAt = Date.now();
                 this.saveChats();
+
+                this.hideTyping();
                 this.renderMessages(chat.messages);
                 this.updateMsgCount();
 
-                if (input) {
-                    input.value = '';
-                    input.style.height = 'auto';
+                if (document.hidden) {
+                    this.sendBrowserNotif('Dechris AI', 'New response received');
                 }
-                this.removeFile();
-
-                this.showTyping();
-                this.state.isTyping = true;
-                const sendBtn = document.getElementById('sendBtn');
-                if (sendBtn) sendBtn.disabled = true;
-
-                try {
-                    const cfg = this.config.modes[this.state.mode];
-                    let body, url;
-
-                    if (this.state.mode === 'chat') {
-                        const recentMessages = chat.messages.slice(-this.config.maxMessages).map(m => ({
-                            role: m.role,
-                            content: m.apiContent || m.content
-                        }));
-                        body = JSON.stringify({ messages: recentMessages });
-                        url = this.config.baseUrl + cfg.endpoint;
-                    } else if (this.state.mode === 'agent') {
-                        const lastUserMsg = [...chat.messages].reverse().find(m => m.role === 'user');
-                        body = JSON.stringify({ input: lastUserMsg ? (lastUserMsg.apiContent || lastUserMsg.content) : apiContent });
-                        url = this.config.baseUrl + cfg.endpoint;
-                    } else {
-                        body = JSON.stringify({ text: apiContent });
-                        url = this.config.baseUrl + cfg.endpoint;
-                    }
-
-                    // DEBUG LOGS
-                    console.log("[Dechris AI] REQUEST URL:", url);
-                    console.log("[Dechris AI] REQUEST BODY:", body);
-
-                    // FETCH WITH 60s TIMEOUT
-                    const controller = new AbortController();
-                    const timeout = setTimeout(() => controller.abort(), 60000);
-
-                    let response;
-                    try {
-                        response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: body,
-                            signal: controller.signal
-                        });
-                    } finally {
-                        clearTimeout(timeout);
-                    }
-
-                    if (!response.ok) {
-                        const text = await response.text().catch(() => "No response body");
-                        console.error("[Dechris AI] API ERROR RESPONSE:", text);
-                        throw new Error(`HTTP ${response.status}: ${text}`);
-                    }
-
-                    const data = await response.json();
-                    console.log("[Dechris AI] API RESPONSE:", data);
-
-                    // FIXED RESPONSE HANDLING
-                    let assistantContent = '';
-                    const expectedKey = cfg.responseKey;
-
-                    if (typeof data?.[expectedKey] === 'string') {
-                        assistantContent = data[expectedKey];
-                    } else if (typeof data?.reply === 'string') {
-                        assistantContent = data.reply;
-                    } else if (typeof data?.result === 'string') {
-                        assistantContent = data.result;
-                    } else if (typeof data?.response === 'string') {
-                        assistantContent = data.response;
-                    } else if (data?.message?.content) {
-                        assistantContent = data.message.content;
-                    } else if (typeof data === 'string') {
-                        assistantContent = data;
-                    } else {
-                        assistantContent = "⚠️ Unexpected response format:\n\n" + JSON.stringify(data, null, 2);
-                    }
-
-                    const assistantMsg = { 
-                        role: 'assistant', 
-                        content: assistantContent, 
-                        timestamp: Date.now(),
-                        mode: this.state.mode
-                    };
-                    chat.messages.push(assistantMsg);
-                    chat.updatedAt = Date.now();
-                    this.saveChats();
-
+            } catch (error) {
+                if (error.name === 'AbortError') {
                     this.hideTyping();
-                    this.renderMessages(chat.messages);
-                    this.updateMsgCount();
-
-                    // Browser notification only when tab is hidden
-                    if (document.hidden) {
-                        this.sendBrowserNotif('Dechris AI', 'New response received');
-                    }
-
-                } catch (error) {
+                    this.toast('Request cancelled', 'info');
+                } else {
                     console.error('[Dechris AI] API Error:', error);
                     this.hideTyping();
-
-                    const errorMsg = { 
-                        role: 'assistant', 
-                        content: `**Connection Error**\n\n${this.escapeHtml(error.message)}\n\nThe server may be unavailable or the request timed out. Please try again later.`, 
+                    const errorMsg = {
+                        role: 'assistant',
+                        content: `**Connection Error**\n\n${this.escapeHtml(error.message)}\n\nThe server may be unavailable or the request timed out. Please try again later.`,
                         timestamp: Date.now(),
                         mode: this.state.mode,
                         isError: true
@@ -1589,187 +2105,290 @@
                     this.saveChats();
                     this.renderMessages(chat.messages);
                     this.updateMsgCount();
-                } finally {
-                    this.state.isTyping = false;
-                    const btn = document.getElementById('sendBtn');
-                    if (btn) btn.disabled = false;
-                    const inp = document.getElementById('userInput');
-                    if (inp) inp.focus();
                 }
-            },
+            } finally {
+                this.state.isTyping = false;
+                this.state.abortController = null;
+                document.body.classList.remove('app-loading');
+                const inp = document.getElementById('userInput');
+                if (inp) inp.focus();
+            }
+        },
 
-            showTyping() {
-                const container = document.getElementById('messagesList');
-                if (!container) return;
-                const typingHTML = `<div class="typing-indicator" id="typingIndicator">
-                    <div class="message-avatar"><i class="fas fa-robot"></i></div>
-                    <div class="typing-bubble">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
-                </div>`;
-                container.insertAdjacentHTML('beforeend', typingHTML);
-                this.scrollToBottom();
-            },
+        cancelRequest() {
+            if (this.state.abortController) {
+                this.state.abortController.abort();
+            }
+        },
 
-            hideTyping() {
-                const el = document.getElementById('typingIndicator');
-                if (el) el.remove();
-            },
+        // ===================== CHAT MODE (PORTED FROM chat.js) =====================
+        async processChatMode(chat, apiContent) {
+            const recentMessages = chat.messages.slice(-this.config.maxMessages).map(m => ({
+                role: m.role,
+                content: m.apiContent || m.content
+            }));
+            const lastMsg = recentMessages[recentMessages.length - 1];
+            let input = lastMsg ? lastMsg.content : apiContent;
+            if (input.length > 200000) input = input.slice(0, 200000);
 
-            scrollToBottom() {
-                const container = document.getElementById('chatContainer');
-                if (!container) return;
-                requestAnimationFrame(() => {
-                    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-                });
-            },
+            const chunks = smartChunk(input, 8000);
+            let finalReply = '';
 
-            updateMsgCount() {
-                const chat = this.getCurrentChat();
-                const count = chat ? chat.messages.length : 0;
-                const el = document.getElementById('msgCount');
-                if (el) el.textContent = count + ' message' + (count !== 1 ? 's' : '');
-            },
-
-            async handleFileSelect(input) {
-                const file = input.files[0];
-                if (!file) return;
-
-                const allowed = ['.txt','.json','.html','.css','.js','.md','.py','.jsx','.tsx','.sql','.yaml','.yml','.pdf'];
-                const ext = '.' + file.name.split('.').pop().toLowerCase();
-
-                if (!allowed.includes(ext)) {
-                    alert('Invalid file type. Please upload: ' + allowed.join(', '));
-                    input.value = '';
-                    return;
+            if (chunks.length === 1) {
+                const finalMessages = [systemPrompt(), ...recentMessages];
+                const aiResponse = await callAI(finalMessages, this.state.abortController?.signal);
+                finalReply = getSafeContent(aiResponse);
+            } else {
+                let tempMessages = [systemPrompt(), ...recentMessages.slice(0, -1)];
+                let partials = [];
+                for (let i = 0; i < chunks.length; i++) {
+                    if (this.state.abortController?.signal.aborted) throw new Error('AbortError');
+                    const chunk = chunks[i];
+                    try {
+                        tempMessages.push({ role: 'user', content: `PART ${i + 1}/${chunks.length}:\n${chunk}` });
+                        const aiResponse = await callAI(tempMessages, this.state.abortController?.signal);
+                        const content = getSafeContent(aiResponse);
+                        if (!content) continue;
+                        partials.push(content);
+                        tempMessages.push({ role: 'assistant', content });
+                    } catch (err) {
+                        if (err.name === 'AbortError') throw err;
+                        console.error(`Chunk ${i + 1} failed:`, err.message);
+                        continue;
+                    }
                 }
-
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('File too large. Maximum size is 5MB.');
-                    input.value = '';
-                    return;
-                }
-
                 try {
-                    const content = await this.readFile(file);
-                    this.state.currentFile = file;
-                    this.state.currentFileContent = content;
-
-                    const previewName = document.getElementById('filePreviewName');
-                    const preview = document.getElementById('filePreview');
-                    if (previewName) previewName.textContent = file.name;
-                    if (preview) preview.style.display = 'flex';
-
-                    if (this.state.mode !== 'analyze') {
-                        this.setMode('analyze');
-                    }
-
-                    setTimeout(() => {
-                        this.sendMessage();
-                    }, 300);
-                } catch (e) {
-                    alert('Could not read the file.');
-                    input.value = '';
+                    const finalResponse = await callAI([
+                        systemPrompt(),
+                        { role: 'user', content: `Combine the following responses into ONE clean final answer.\n\nRULES:\n- Remove repetition\n- Keep best parts\n- Ensure clarity\n- Keep full meaning\n\nCONTENT:\n${partials.filter(Boolean).join('\n\n')}` }
+                    ], this.state.abortController?.signal);
+                    finalReply = getSafeContent(finalResponse);
+                } catch (err) {
+                    if (err.name === 'AbortError') throw err;
+                    console.error('Final synthesis failed:', err.message);
                 }
-            },
+                if (!finalReply) finalReply = partials.filter(Boolean).join('\n\n');
+            }
+            return finalReply || 'No response from AI.';
+        },
 
-            removeFile() {
-                this.state.currentFile = null;
-                this.state.currentFileContent = null;
+        // ===================== AGENT MODE (PORTED FROM agent.js) =====================
+        async processAgentMode(apiContent) {
+            let input = apiContent;
+            if (input.length > 200000) input = input.slice(0, 200000);
+            const chunks = smartChunk(input, 12000);
+            let results = [];
+            let conversation = [agentPrompt(), agentSystemInstruction()];
+
+            for (let i = 0; i < chunks.length; i++) {
+                if (this.state.abortController?.signal.aborted) throw new Error('AbortError');
+                const chunk = chunks[i];
+                if (!chunk.trim()) continue;
+                conversation.push({ role: 'user', content: `PART ${i + 1}/${chunks.length}:\n${chunk}` });
+                try {
+                    const response = await callAI(conversation, this.state.abortController?.signal);
+                    const content = getSafeContent(response);
+                    if (!content) continue;
+                    results.push(content);
+                    conversation.push({ role: 'assistant', content });
+                } catch (err) {
+                    if (err.name === 'AbortError') throw err;
+                    console.error(`Chunk ${i + 1} failed:`, err.message);
+                    continue;
+                }
+            }
+
+            let finalText = results.join('\n\n');
+            try {
+                const finalResponse = await callAI([
+                    agentPrompt(),
+                    refinePrompt(),
+                    { role: 'user', content: finalText }
+                ], this.state.abortController?.signal);
+                const refined = getSafeContent(finalResponse);
+                if (refined) finalText = refined;
+            } catch (err) {
+                if (err.name === 'AbortError') throw err;
+                console.error('Final refinement failed:', err.message);
+            }
+
+            let files = dedupeFiles(extractFiles(finalText));
+            if (!files.length) {
+                files = [{ name: 'output.txt', content: finalText }];
+            }
+            return { result: finalText, files };
+        },
+
+        // ===================== ANALYZE MODE (PORTED FROM analyse.js) =====================
+        async processAnalyzeMode(apiContent) {
+            let text = apiContent;
+            if (text.length > 50000) text = text.slice(0, 50000);
+            const response = await callAI([
+                analyzePrompt(),
+                { role: 'user', content: text }
+            ], this.state.abortController?.signal);
+            return getSafeContent(response) || 'No analysis generated.';
+        },
+
+        // ===================== TYPING & SCROLL =====================
+        showTyping() {
+            const container = document.getElementById('messagesList');
+            if (!container) return;
+            container.classList.add('typing-active');
+            const typingHTML = `<div class="typing-indicator" id="typingIndicator">
+                <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                <div class="typing-bubble">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>`;
+            container.insertAdjacentHTML('beforeend', typingHTML);
+            this.scrollToBottom();
+        },
+
+        hideTyping() {
+            const el = document.getElementById('typingIndicator');
+            if (el) el.remove();
+            const container = document.getElementById('messagesList');
+            if (container) container.classList.remove('typing-active');
+        },
+
+        scrollToBottom() {
+            const container = document.getElementById('chatContainer');
+            if (!container) return;
+            requestAnimationFrame(() => {
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+            });
+        },
+
+        updateMsgCount() {
+            const chat = this.getCurrentChat();
+            const count = chat ? chat.messages.length : 0;
+            const el = document.getElementById('msgCount');
+            if (el) el.textContent = count + ' message' + (count !== 1 ? 's' : '');
+        },
+
+        // ===================== FILE HANDLING =====================
+        async handleFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const allowed = ['.txt','.json','.html','.css','.js','.md','.py','.jsx','.tsx','.sql','.yaml','.yml','.pdf'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (!allowed.includes(ext)) {
+                alert('Invalid file type. Please upload: ' + allowed.join(', '));
+                input.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File too large. Maximum size is 5MB.');
+                input.value = '';
+                return;
+            }
+            try {
+                const content = await this.readFile(file);
+                this.state.currentFile = file;
+                this.state.currentFileContent = content;
+                const previewName = document.getElementById('filePreviewName');
                 const preview = document.getElementById('filePreview');
-                const fileInput = document.getElementById('fileInput');
-                if (preview) preview.style.display = 'none';
-                if (fileInput) fileInput.value = '';
-            },
+                if (previewName) previewName.textContent = file.name;
+                if (preview) preview.style.display = 'flex';
+                if (this.state.mode !== 'analyze') this.setMode('analyze');
+                setTimeout(() => this.sendMessage(), 300);
+            } catch (e) {
+                alert('Could not read the file.');
+                input.value = '';
+            }
+        },
 
-            readFile(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.onerror = (e) => reject(e);
-                    reader.readAsText(file);
-                });
-            },
+        removeFile() {
+            this.state.currentFile = null;
+            this.state.currentFileContent = null;
+            const preview = document.getElementById('filePreview');
+            const fileInput = document.getElementById('fileInput');
+            if (preview) preview.style.display = 'none';
+            if (fileInput) fileInput.value = '';
+        },
 
-            autoResize(textarea) {
-                requestAnimationFrame(() => {
-                    textarea.style.height = 'auto';
-                    const newHeight = Math.min(textarea.scrollHeight, 400);
-                    textarea.style.height = newHeight + 'px';
-                });
-            },
+        readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+        },
 
-            handleEnter(event) {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    this.sendMessage();
-                }
-            },
+        // ===================== UI HELPERS =====================
+        autoResize(textarea) {
+            requestAnimationFrame(() => {
+                textarea.style.height = 'auto';
+                const newHeight = Math.min(textarea.scrollHeight, 400);
+                textarea.style.height = newHeight + 'px';
+            });
+        },
 
-            quickStart(text) {
-                const input = document.getElementById('userInput');
-                if (input) {
-                    input.value = text;
-                    this.autoResize(input);
-                }
+        handleEnter(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
                 this.sendMessage();
-            },
+            }
+        },
 
-            toggleSidebar() {
-                this.state.sidebarOpen = !this.state.sidebarOpen;
-                this.updateSidebar();
-            },
+        quickStart(text) {
+            const input = document.getElementById('userInput');
+            if (input) { input.value = text; this.autoResize(input); }
+            this.sendMessage();
+        },
 
-            updateSidebar() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('sidebarOverlay');
+        toggleSidebar(force) {
+            if (typeof force === 'boolean') this.state.sidebarOpen = force;
+            else this.state.sidebarOpen = !this.state.sidebarOpen;
+            this.updateSidebar();
+        },
 
-                if (window.innerWidth <= 768) {
-                    if (this.state.sidebarOpen) {
-                        if (sidebar) sidebar.classList.add('open');
-                        if (overlay) overlay.classList.add('active');
-                    } else {
-                        if (sidebar) sidebar.classList.remove('open');
-                        if (overlay) overlay.classList.remove('active');
-                    }
+        updateSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (window.innerWidth <= 768) {
+                if (this.state.sidebarOpen) {
+                    if (sidebar) sidebar.classList.add('open');
+                    if (overlay) overlay.classList.add('active');
                 } else {
                     if (sidebar) sidebar.classList.remove('open');
                     if (overlay) overlay.classList.remove('active');
                 }
-            },
-
-            copyCode(btn) {
-                const pre = btn.closest('pre');
-                if (!pre) return;
-                const code = pre.querySelector('code');
-                if (!code) return;
-                const text = code.textContent;
-
-                navigator.clipboard.writeText(text).then(() => {
-                    const original = btn.textContent;
-                    btn.textContent = 'Copied!';
-                    btn.classList.add('copied');
-                    setTimeout(() => {
-                        btn.textContent = original;
-                        btn.classList.remove('copied');
-                    }, 2000);
-                });
-            },
-
-            escapeHtml(text) {
-                if (!text) return '';
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
+            } else {
+                if (sidebar) sidebar.classList.remove('open');
+                if (overlay) overlay.classList.remove('active');
             }
-        };
+        },
 
-        window.App = App;
-        document.addEventListener('DOMContentLoaded', () => App.init());
-    })();
+        copyCode(btn) {
+            const pre = btn.closest('pre');
+            if (!pre) return;
+            const code = pre.querySelector('code');
+            if (!code) return;
+            const text = code.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 2000);
+            });
+        },
+
+        escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    };
+
+    window.App = App;
+    document.addEventListener('DOMContentLoaded', () => App.init());
+})();
     </script>
 </body>
 </html>
-    
