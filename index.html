@@ -31,7 +31,7 @@
             --bg-primary: #0a0a0f;
             --bg-secondary: #12121a;
             --bg-tertiary: #1a1a25;
-            --bg-glass: rgba(18, 18, 26, 0.85);
+            --bg-glass: rgba(18, 18, 26, 0.9);
             --bg-hover: rgba(255, 255, 255, 0.05);
             --bg-active: rgba(255, 255, 255, 0.08);
             --text-primary: #f0f0f5;
@@ -168,47 +168,48 @@
         }
         .save-btn:active { transform: translateY(0); }
 
-        /* Notification */
-        .notification {
-            position: fixed; top: 20px; right: 20px; z-index: 3000;
+        /* File Content Viewer Modal */
+        .file-viewer-overlay {
+            position: fixed; inset: 0; z-index: 2500;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(16px);
+            display: none; flex-direction: column;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .file-viewer-overlay.active { display: flex; opacity: 1; }
+        .file-viewer-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
             background: var(--bg-glass);
+        }
+        .file-viewer-title {
+            display: flex; align-items: center; gap: 12px;
+            font-weight: 600; font-size: 0.95rem;
+        }
+        .file-viewer-title i { color: var(--accent-analyze); }
+        .file-viewer-close {
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 1.2rem; cursor: pointer; padding: 6px 10px;
+            border-radius: var(--radius-sm); transition: var(--transition);
+        }
+        .file-viewer-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .file-viewer-body {
+            flex: 1; overflow: auto; padding: 24px;
+        }
+        .file-viewer-content {
+            max-width: 900px; margin: 0 auto;
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 16px; width: 320px;
-            box-shadow: var(--shadow-lg);
-            backdrop-filter: blur(20px);
-            transform: translateX(400px);
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-radius: var(--radius-md);
+            overflow: hidden;
         }
-        .notification.show { transform: translateX(0); }
-        .notification-header {
-            display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+        .file-viewer-content pre {
+            margin: 0; padding: 20px;
+            font-family: var(--font-mono); font-size: 0.85rem;
+            line-height: 1.7; color: var(--text-primary);
+            overflow-x: auto; white-space: pre-wrap; word-break: break-word;
         }
-        .notification-icon {
-            width: 36px; height: 36px; border-radius: 10px;
-            background: linear-gradient(135deg, var(--accent), #2563eb);
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 0.9rem;
-        }
-        .notification-title { font-weight: 600; font-size: 0.9rem; }
-        .notification-body {
-            font-size: 0.85rem; color: var(--text-secondary);
-            line-height: 1.5; margin-bottom: 12px;
-        }
-        .notification-actions { display: flex; gap: 8px; }
-        .notification-btn {
-            flex: 1; padding: 8px; border-radius: var(--radius-sm);
-            font-size: 0.8rem; font-weight: 500; cursor: pointer;
-            border: none; transition: var(--transition);
-        }
-        .notification-btn.primary {
-            background: var(--accent); color: white;
-        }
-        .notification-btn.secondary {
-            background: var(--bg-tertiary); color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-        .notification-btn:hover { opacity: 0.9; }
 
         /* Sidebar */
         #sidebar {
@@ -396,6 +397,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .message.user { flex-direction: row-reverse; }
+        .message.system { flex-direction: row; }
         .message-avatar {
             width: 32px; height: 32px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -409,6 +411,10 @@
             background: var(--bg-tertiary);
             color: var(--accent);
             border: 1px solid var(--border);
+        }
+        .message.system .message-avatar {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
         }
         .message-content {
             max-width: calc(100% - 60px);
@@ -424,6 +430,11 @@
         .message.assistant .message-content {
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+        .message.system .message-content {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
             border-bottom-left-radius: 4px;
         }
         .message-content p { margin-bottom: 0.8em; }
@@ -503,6 +514,44 @@
         .message-content hr {
             border: none; border-top: 1px solid var(--border);
             margin: 1.5em 0;
+        }
+
+        /* System broadcast in chat */
+        .system-broadcast-header {
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 600; font-size: 0.85rem;
+            color: #f59e0b; margin-bottom: 10px;
+        }
+        .ack-btn {
+            margin-top: 12px; padding: 8px 16px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none; border-radius: var(--radius-sm);
+            color: white; font-weight: 600; font-size: 0.8rem;
+            cursor: pointer; transition: var(--transition);
+            font-family: var(--font-sans);
+        }
+        .ack-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+        }
+
+        /* File Attachment Compact Display */
+        .file-attachment {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 6px 12px; border-radius: var(--radius-md);
+            font-size: 0.85rem; margin-top: 8px;
+            cursor: pointer; transition: var(--transition);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .file-attachment:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.2);
+        }
+        .file-attachment i { color: var(--accent-analyze); }
+        .file-attachment-name { font-weight: 500; }
+        .file-attachment-size {
+            font-size: 0.75rem; color: rgba(255,255,255,0.6);
         }
 
         /* Typing Indicator */
@@ -617,7 +666,7 @@
             .welcome-title { font-size: 1.6rem; }
             .quick-actions { grid-template-columns: 1fr; }
             .message-content { max-width: calc(100% - 50px); }
-            .notification { width: calc(100% - 40px); right: 20px; }
+            .file-viewer-overlay { padding: 0; }
         }
 
         .sidebar-overlay {
@@ -705,7 +754,7 @@
                     <label class="setting-label">Notifications</label>
                     <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer;">
                         <input type="checkbox" id="notifToggle" checked style="accent-color: var(--accent);">
-                        <span style="font-size: 0.9rem;">Enable system broadcasts</span>
+                        <span style="font-size: 0.9rem;">Enable background notifications</span>
                     </label>
                 </div>
                 <button onclick="App.saveSettings()" class="save-btn" style="margin-top: 10px;">Save Changes</button>
@@ -713,19 +762,21 @@
         </div>
     </div>
 
-    <!-- Notification -->
-    <div id="notification" class="notification">
-        <div class="notification-header">
-            <div class="notification-icon"><i class="fas fa-broadcast-tower"></i></div>
-            <div>
-                <div class="notification-title">System Broadcast</div>
-                <div style="font-size: 0.75rem; color: var(--text-secondary);">Havenova-X</div>
+    <!-- File Content Viewer -->
+    <div class="file-viewer-overlay" id="fileViewerOverlay">
+        <div class="file-viewer-header">
+            <div class="file-viewer-title">
+                <i class="fas fa-file-code"></i>
+                <span id="fileViewerName">File Content</span>
             </div>
+            <button class="file-viewer-close" onclick="App.closeFileViewer()">
+                <i class="fas fa-times"></i> Close
+            </button>
         </div>
-        <div class="notification-body" id="notifText"></div>
-        <div class="notification-actions">
-            <button onclick="App.dismissNotif()" class="notification-btn primary">Acknowledge</button>
-            <button onclick="App.muteNotif()" class="notification-btn secondary">Mute</button>
+        <div class="file-viewer-body">
+            <div class="file-viewer-content">
+                <pre id="fileViewerContent"><code></code></pre>
+            </div>
         </div>
     </div>
 
@@ -855,7 +906,9 @@
                 isTyping: false,
                 sidebarOpen: window.innerWidth > 768,
                 currentFile: null,
-                notifMuted: false
+                currentFileContent: null,
+                notifMuted: false,
+                lastNotifHash: null
             },
 
             config: {
@@ -869,7 +922,7 @@
                         color: '#3b82f6',
                         placeholder: 'Message Dechris AI...',
                         desc: 'Fast, general-purpose chat',
-                        payloadType: 'messages'
+                        responseKey: 'reply'
                     },
                     agent: { 
                         name: 'DeepThink', 
@@ -878,7 +931,7 @@
                         color: '#a855f7',
                         placeholder: 'Ask DeepThink to code, plan, or reason...',
                         desc: 'Multi-step reasoning & coding',
-                        payloadType: 'input'
+                        responseKey: 'result'
                     },
                     analyze: { 
                         name: 'Analyze', 
@@ -887,7 +940,7 @@
                         color: '#10b981',
                         placeholder: 'Upload a file or paste text to analyze...',
                         desc: 'File & text analysis',
-                        payloadType: 'text'
+                        responseKey: 'result'
                     }
                 }
             },
@@ -922,21 +975,115 @@
                     this.switchChat(lastChat.id, false);
                 }
 
-                // Always hide splash after delay
+                // Request browser notification permission
+                this.requestBrowserNotif();
+
+                // Start checking notif.txt periodically
+                this.checkNotif();
+                setInterval(() => this.checkNotif(), 30000);
+
+                // Splash screen handling
                 setTimeout(() => {
                     const splash = document.getElementById('splash');
                     if (splash) {
                         splash.classList.add('hidden');
-                        splash.style.display = 'none';
+                        splash.style.pointerEvents = 'none';
                     }
                 }, 1200);
+                setTimeout(() => {
+                    const splash = document.getElementById('splash');
+                    if (splash) splash.style.display = 'none';
+                }, 3000);
 
                 this.updateSidebar();
                 window.addEventListener('resize', () => this.updateSidebar());
+
                 setTimeout(() => {
                     const input = document.getElementById('userInput');
                     if (input) input.focus();
-                }, 1500);
+                }, 1600);
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeSettings();
+                        this.closeFileViewer();
+                    }
+                });
+            },
+
+            requestBrowserNotif() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            },
+
+            sendBrowserNotif(title, body) {
+                if (!this.state.settings || this.state.settings.notifications === false) return;
+                if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+                    try {
+                        new Notification(title || 'Dechris AI', {
+                            body: body || 'New response received',
+                            icon: 'logo.png',
+                            badge: 'logo.png'
+                        });
+                    } catch (e) {}
+                }
+            },
+
+            async checkNotif() {
+                try {
+                    const resp = await fetch(this.config.baseUrl + '/notif.txt', { 
+                        cache: 'no-store',
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (!resp.ok) return;
+                    const text = await resp.text();
+                    if (!text || !text.trim()) return;
+
+                    const hash = this.simpleHash(text.trim());
+                    const ackHash = localStorage.getItem('dechris_notif_ack');
+                    if (ackHash === String(hash)) return;
+
+                    // Add as system message to current chat
+                    const chat = this.getCurrentChat();
+                    if (!chat) return;
+
+                    // Remove old system messages first
+                    chat.messages = chat.messages.filter(m => m.role !== 'system');
+
+                    chat.messages.push({
+                        role: 'system',
+                        content: text.trim(),
+                        timestamp: Date.now(),
+                        notifHash: hash
+                    });
+                    chat.updatedAt = Date.now();
+                    this.saveChats();
+                    this.renderMessages(chat.messages);
+                    this.updateMsgCount();
+                } catch (e) {
+                    // Silently fail - notif.txt is optional
+                }
+            },
+
+            simpleHash(str) {
+                let h = 0;
+                for (let i = 0; i < str.length; i++) {
+                    h = ((h << 5) - h) + str.charCodeAt(i);
+                    h |= 0;
+                }
+                return h;
+            },
+
+            ackNotif(hash) {
+                localStorage.setItem('dechris_notif_ack', String(hash));
+                const chat = this.getCurrentChat();
+                if (chat) {
+                    chat.messages = chat.messages.filter(m => m.role !== 'system');
+                    this.saveChats();
+                    this.renderMessages(chat.messages);
+                    this.updateMsgCount();
+                }
             },
 
             loadSettings() {
@@ -944,15 +1091,17 @@
                     const saved = localStorage.getItem('dechris_settings');
                     if (saved) this.state.settings = JSON.parse(saved);
                 } catch (e) {}
-                if (!this.state.settings) {
+                if (!this.state.settings || typeof this.state.settings !== 'object') {
                     this.state.settings = { name: '', notifications: true };
                 }
                 this.updateUserUI();
             },
 
             saveSettings() {
-                const name = document.getElementById('settingsName').value.trim();
-                const notif = document.getElementById('notifToggle').checked;
+                const nameEl = document.getElementById('settingsName');
+                const notifEl = document.getElementById('notifToggle');
+                const name = nameEl ? nameEl.value.trim() : '';
+                const notif = notifEl ? notifEl.checked : true;
                 this.state.settings = { name: name || 'Agent', notifications: notif };
                 localStorage.setItem('dechris_settings', JSON.stringify(this.state.settings));
                 this.updateUserUI();
@@ -1009,7 +1158,7 @@
                     const saved = localStorage.getItem('dechris_chats');
                     if (saved) this.state.chats = JSON.parse(saved);
                 } catch (e) {}
-                if (!this.state.chats) this.state.chats = [];
+                if (!Array.isArray(this.state.chats)) this.state.chats = [];
                 this.renderChatList();
             },
 
@@ -1092,7 +1241,12 @@
                     const modeCfg = this.config.modes[chat.mode || 'chat'];
                     const isActive = chat.id === this.state.currentChatId;
                     const firstMsg = chat.messages.find(m => m.role === 'user');
-                    const title = firstMsg ? firstMsg.content.substring(0, 30) + (firstMsg.content.length > 30 ? '...' : '') : chat.title;
+                    let title = chat.title || 'New Mission';
+                    if (firstMsg && firstMsg.content) {
+                        const textOnly = firstMsg.content.replace(/\n\n---\n\*\*File:.*$/s, '').trim();
+                        title = textOnly.substring(0, 30) + (textOnly.length > 30 ? '...' : '');
+                        if (!title) title = chat.title || 'File Analysis';
+                    }
                     const date = new Date(chat.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
                     return `<div class="chat-item ${isActive ? 'active' : ''}" onclick="App.switchChat('${chat.id}')">
@@ -1175,7 +1329,7 @@
                     return;
                 }
 
-                container.innerHTML = messages.map(msg => this.buildMessageHTML(msg)).join('');
+                container.innerHTML = messages.map((msg, idx) => this.buildMessageHTML(msg, idx)).join('');
 
                 requestAnimationFrame(() => {
                     container.querySelectorAll('pre code').forEach(block => {
@@ -1186,17 +1340,43 @@
                 this.scrollToBottom();
             },
 
-            buildMessageHTML(msg) {
+            buildMessageHTML(msg, idx) {
+                // System broadcast message
+                if (msg.role === 'system') {
+                    return `<div class="message system">
+                        <div class="message-avatar"><i class="fas fa-broadcast-tower"></i></div>
+                        <div class="message-content">
+                            <div class="system-broadcast-header">
+                                <i class="fas fa-bell"></i>
+                                <span>System Broadcast</span>
+                            </div>
+                            ${this.escapeHtml(msg.content).replace(/\n/g, '<br>')}
+                            <button class="ack-btn" onclick="App.ackNotif(${msg.notifHash || 0})">Acknowledge</button>
+                        </div>
+                    </div>`;
+                }
+
                 const isUser = msg.role === 'user';
                 const avatar = isUser 
                     ? `<div class="message-avatar">${(this.state.settings.name || 'A').charAt(0).toUpperCase()}</div>`
                     : `<div class="message-avatar"><i class="fas fa-robot"></i></div>`;
 
-                let content = msg.content;
-                if (!isUser) {
-                    content = marked.parse(content);
+                let content = '';
+                let fileAttachment = '';
+
+                if (isUser && msg.fileData) {
+                    const size = msg.fileData.size ? this.formatFileSize(msg.fileData.size) : '';
+                    content = msg.content ? this.escapeHtml(msg.content).replace(/\n/g, '<br>') : '';
+                    fileAttachment = `<div class="file-attachment" onclick="App.openFileViewer(${idx})">
+                        <i class="fas fa-file-code"></i>
+                        <span class="file-attachment-name">${this.escapeHtml(msg.fileData.name)}</span>
+                        ${size ? `<span class="file-attachment-size">${size}</span>` : ''}
+                        <i class="fas fa-chevron-down" style="font-size:0.7rem;opacity:0.6;"></i>
+                    </div>`;
+                } else if (!isUser) {
+                    content = marked.parse(msg.content || '');
                 } else {
-                    content = this.escapeHtml(content).replace(/\n/g, '<br>');
+                    content = this.escapeHtml(msg.content || '').replace(/\n/g, '<br>');
                 }
 
                 const modeBadge = !isUser && msg.mode ? 
@@ -1204,14 +1384,45 @@
 
                 return `<div class="message ${isUser ? 'user' : 'assistant'}">
                     ${avatar}
-                    <div class="message-content">${content}${modeBadge}</div>
+                    <div class="message-content">${content}${fileAttachment}${modeBadge}</div>
                 </div>`;
+            },
+
+            formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            },
+
+            openFileViewer(msgIndex) {
+                const chat = this.getCurrentChat();
+                if (!chat || !chat.messages[msgIndex] || !chat.messages[msgIndex].fileData) return;
+
+                const fileData = chat.messages[msgIndex].fileData;
+                const overlay = document.getElementById('fileViewerOverlay');
+                const nameEl = document.getElementById('fileViewerName');
+                const contentEl = document.getElementById('fileViewerContent');
+
+                if (nameEl) nameEl.textContent = fileData.name;
+                if (contentEl) {
+                    const codeEl = contentEl.querySelector('code');
+                    if (codeEl) codeEl.textContent = fileData.content || 'No content available';
+                }
+                if (overlay) overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            },
+
+            closeFileViewer() {
+                const overlay = document.getElementById('fileViewerOverlay');
+                if (overlay) overlay.classList.remove('active');
+                document.body.style.overflow = '';
             },
 
             async sendMessage() {
                 const input = document.getElementById('userInput');
                 const text = input ? input.value.trim() : '';
                 const file = this.state.currentFile;
+                const fileContent = this.state.currentFileContent;
 
                 if (!text && !file) return;
 
@@ -1226,20 +1437,31 @@
                 if (welcome) welcome.classList.add('hidden');
                 if (messagesList) messagesList.classList.remove('hidden');
 
-                let userContent = text;
-                if (file) {
-                    try {
-                        const fileContent = await this.readFile(file);
-                        const ext = file.name.split('.').pop().toLowerCase();
-                        userContent = text 
-                            ? `${text}\n\n---\n**File:** ${file.name}\n\n\`\`\`${ext}\n${fileContent}\n\`\`\`` 
-                            : `Analyze this file (${file.name}):\n\n\`\`\`${ext}\n${fileContent}\n\`\`\``;
-                    } catch (e) {
-                        userContent = text || `Failed to read file: ${file.name}`;
-                    }
+                let apiContent = text;
+                let displayContent = text;
+                let fileData = null;
+
+                if (file && fileContent !== null) {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    apiContent = text 
+                        ? `${text}\n\n---\n**File:** ${file.name}\n\n\`\`\`${ext}\n${fileContent}\n\`\`\`` 
+                        : `Analyze this file (${file.name}):\n\n\`\`\`${ext}\n${fileContent}\n\`\`\``;
+
+                    fileData = {
+                        name: file.name,
+                        size: file.size,
+                        content: fileContent,
+                        ext: ext
+                    };
                 }
 
-                const userMsg = { role: 'user', content: userContent, timestamp: Date.now() };
+                const userMsg = { 
+                    role: 'user', 
+                    content: displayContent, 
+                    timestamp: Date.now(),
+                    fileData: fileData,
+                    apiContent: apiContent
+                };
                 chat.messages.push(userMsg);
                 chat.updatedAt = Date.now();
 
@@ -1270,47 +1492,66 @@
                     if (this.state.mode === 'chat') {
                         const recentMessages = chat.messages.slice(-this.config.maxMessages).map(m => ({
                             role: m.role,
-                            content: m.content
+                            content: m.apiContent || m.content
                         }));
                         body = JSON.stringify({ messages: recentMessages });
                         url = this.config.baseUrl + cfg.endpoint;
                     } else if (this.state.mode === 'agent') {
-                        // Agent uses last user message as input
                         const lastUserMsg = [...chat.messages].reverse().find(m => m.role === 'user');
-                        body = JSON.stringify({ input: lastUserMsg ? lastUserMsg.content : userContent });
+                        body = JSON.stringify({ input: lastUserMsg ? (lastUserMsg.apiContent || lastUserMsg.content) : apiContent });
                         url = this.config.baseUrl + cfg.endpoint;
                     } else {
-                        // Analyze uses text
-                        body = JSON.stringify({ text: userContent });
+                        body = JSON.stringify({ text: apiContent });
                         url = this.config.baseUrl + cfg.endpoint;
                     }
 
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: body
-                    });
+                    // DEBUG LOGS
+                    console.log("[Dechris AI] REQUEST URL:", url);
+                    console.log("[Dechris AI] REQUEST BODY:", body);
+
+                    // FETCH WITH 60s TIMEOUT
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 60000);
+
+                    let response;
+                    try {
+                        response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: body,
+                            signal: controller.signal
+                        });
+                    } finally {
+                        clearTimeout(timeout);
+                    }
 
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        const text = await response.text().catch(() => "No response body");
+                        console.error("[Dechris AI] API ERROR RESPONSE:", text);
+                        throw new Error(`HTTP ${response.status}: ${text}`);
                     }
 
                     const data = await response.json();
+                    console.log("[Dechris AI] API RESPONSE:", data);
 
-                    // Backend returns { "reply": "AI response here" }
+                    // FIXED RESPONSE HANDLING
                     let assistantContent = '';
-                    if (data && typeof data.reply === 'string') {
+                    const expectedKey = cfg.responseKey;
+
+                    if (typeof data?.[expectedKey] === 'string') {
+                        assistantContent = data[expectedKey];
+                    } else if (typeof data?.reply === 'string') {
                         assistantContent = data.reply;
-                    } else if (data && typeof data.response === 'string') {
+                    } else if (typeof data?.result === 'string') {
+                        assistantContent = data.result;
+                    } else if (typeof data?.response === 'string') {
                         assistantContent = data.response;
-                    } else if (data && data.message && typeof data.message.content === 'string') {
+                    } else if (data?.message?.content) {
                         assistantContent = data.message.content;
-                    } else if (data && typeof data.content === 'string') {
-                        assistantContent = data.content;
                     } else if (typeof data === 'string') {
                         assistantContent = data;
                     } else {
-                        assistantContent = JSON.stringify(data, null, 2);
+                        assistantContent = "⚠️ Unexpected response format:\n\n" + JSON.stringify(data, null, 2);
                     }
 
                     const assistantMsg = { 
@@ -1327,18 +1568,18 @@
                     this.renderMessages(chat.messages);
                     this.updateMsgCount();
 
-                    // Only show notification if tab is hidden AND notifications enabled
-                    if (this.state.settings.notifications !== false && document.hidden) {
-                        this.showNotification('New Response', 'Dechris AI has responded.');
+                    // Browser notification only when tab is hidden
+                    if (document.hidden) {
+                        this.sendBrowserNotif('Dechris AI', 'New response received');
                     }
 
                 } catch (error) {
-                    console.error('API Error:', error);
+                    console.error('[Dechris AI] API Error:', error);
                     this.hideTyping();
 
                     const errorMsg = { 
                         role: 'assistant', 
-                        content: `**Connection Error**\n\n${this.escapeHtml(error.message)}\n\nThe server may be unavailable. Please try again later.`, 
+                        content: `**Connection Error**\n\n${this.escapeHtml(error.message)}\n\nThe server may be unavailable or the request timed out. Please try again later.`, 
                         timestamp: Date.now(),
                         mode: this.state.mode,
                         isError: true
@@ -1400,36 +1641,43 @@
                 const ext = '.' + file.name.split('.').pop().toLowerCase();
 
                 if (!allowed.includes(ext)) {
-                    this.showNotification('Invalid File', 'Please upload a supported file type.');
+                    alert('Invalid file type. Please upload: ' + allowed.join(', '));
                     input.value = '';
                     return;
                 }
 
                 if (file.size > 5 * 1024 * 1024) {
-                    this.showNotification('File Too Large', 'Maximum file size is 5MB.');
+                    alert('File too large. Maximum size is 5MB.');
                     input.value = '';
                     return;
                 }
 
-                this.state.currentFile = file;
-                const previewName = document.getElementById('filePreviewName');
-                const preview = document.getElementById('filePreview');
-                if (previewName) previewName.textContent = file.name;
-                if (preview) preview.style.display = 'flex';
+                try {
+                    const content = await this.readFile(file);
+                    this.state.currentFile = file;
+                    this.state.currentFileContent = content;
 
-                // Auto-switch to analyze mode
-                if (this.state.mode !== 'analyze') {
-                    this.setMode('analyze');
+                    const previewName = document.getElementById('filePreviewName');
+                    const preview = document.getElementById('filePreview');
+                    if (previewName) previewName.textContent = file.name;
+                    if (preview) preview.style.display = 'flex';
+
+                    if (this.state.mode !== 'analyze') {
+                        this.setMode('analyze');
+                    }
+
+                    setTimeout(() => {
+                        this.sendMessage();
+                    }, 300);
+                } catch (e) {
+                    alert('Could not read the file.');
+                    input.value = '';
                 }
-
-                // Auto-send for analyze mode
-                setTimeout(() => {
-                    this.sendMessage();
-                }, 300);
             },
 
             removeFile() {
                 this.state.currentFile = null;
+                this.state.currentFileContent = null;
                 const preview = document.getElementById('filePreview');
                 const fileInput = document.getElementById('fileInput');
                 if (preview) preview.style.display = 'none';
@@ -1492,33 +1740,6 @@
                 }
             },
 
-            showNotification(title, text) {
-                if (this.state.notifMuted) return;
-                const notif = document.getElementById('notification');
-                const titleEl = notif ? notif.querySelector('.notification-title') : null;
-                const bodyEl = document.getElementById('notifText');
-
-                if (!notif) return;
-                if (titleEl) titleEl.textContent = title;
-                if (bodyEl) bodyEl.textContent = text;
-                notif.classList.add('show');
-
-                clearTimeout(this._notifTimer);
-                this._notifTimer = setTimeout(() => {
-                    notif.classList.remove('show');
-                }, 4000);
-            },
-
-            dismissNotif() {
-                const notif = document.getElementById('notification');
-                if (notif) notif.classList.remove('show');
-            },
-
-            muteNotif() {
-                this.state.notifMuted = true;
-                this.dismissNotif();
-            },
-
             copyCode(btn) {
                 const pre = btn.closest('pre');
                 if (!pre) return;
@@ -1538,6 +1759,7 @@
             },
 
             escapeHtml(text) {
+                if (!text) return '';
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
@@ -1550,3 +1772,4 @@
     </script>
 </body>
 </html>
+    
