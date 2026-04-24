@@ -244,6 +244,40 @@
             user-select: text;
         }
 
+        /* HTML Preview Overlay */
+        .preview-overlay {
+            position: fixed; inset: 0; z-index: 2600;
+            background: var(--bg-primary);
+            display: none; flex-direction: column;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .preview-overlay.active { display: flex; opacity: 1; }
+        .preview-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-glass);
+            padding-top: calc(16px + var(--safe-top));
+            flex-shrink: 0;
+        }
+        .preview-title {
+            display: flex; align-items: center; gap: 12px;
+            font-weight: 600; font-size: 0.95rem;
+        }
+        .preview-title i { color: var(--accent); }
+        .preview-close {
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 1.2rem; cursor: pointer; padding: 6px 10px;
+            border-radius: var(--radius-sm); transition: var(--transition);
+        }
+        .preview-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .preview-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: white;
+        }
+
         #sidebar {
             width: 280px; height: 100dvh;
             background: var(--bg-secondary);
@@ -377,7 +411,6 @@
         .model-selector:hover { border-color: var(--border-hover); }
         .model-selector i:first-child { color: var(--accent); }
         .model-selector.agent i:first-child { color: var(--accent-agent); }
-        .model-selector.analyze i:first-child { color: var(--accent-analyze); }
         .icon-btn {
             background: none; border: none; color: var(--text-secondary);
             font-size: 1rem; cursor: pointer; padding: 8px;
@@ -388,7 +421,6 @@
         .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
         .icon-btn.active { color: var(--accent); background: var(--accent-glow); }
         .icon-btn.agent-active { color: var(--accent-agent); background: var(--accent-agent-glow); }
-        .icon-btn.analyze-active { color: var(--accent-analyze); background: var(--accent-analyze-glow); }
         .icon-btn:disabled, .icon-btn.disabled {
             opacity: 0.3; pointer-events: none; cursor: not-allowed;
         }
@@ -609,6 +641,33 @@
         .file-attachment-size {
             font-size: 0.75rem; color: rgba(255,255,255,0.6);
         }
+        .file-attachment .file-action {
+            background: none; border: none; color: var(--text-secondary);
+            cursor: pointer; padding: 2px 6px; border-radius: 4px;
+            font-size: 0.75rem; margin-left: 4px;
+            transition: var(--transition);
+        }
+        .file-attachment .file-action:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-primary);
+        }
+        .file-attachment .file-action.preview { color: var(--accent); }
+        .file-attachment .file-action.preview:hover { color: #60a5fa; }
+        .file-attachment .file-action.download { color: var(--accent-analyze); }
+        .file-attachment .file-action.download:hover { color: #34d399; }
+
+        .generated-files {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .generated-files-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
 
         .typing-indicator {
             display: flex; gap: 16px;
@@ -659,10 +718,6 @@
         .input-wrapper.agent-mode:focus-within {
             border-color: var(--accent-agent);
             box-shadow: 0 0 0 3px var(--accent-agent-glow), var(--shadow-md);
-        }
-        .input-wrapper.analyze-mode:focus-within {
-            border-color: var(--accent-analyze);
-            box-shadow: 0 0 0 3px var(--accent-analyze-glow), var(--shadow-md);
         }
         #userInput {
             flex: 1; background: none; border: none;
@@ -900,6 +955,19 @@
         </div>
     </div>
 
+    <div class="preview-overlay" id="htmlPreviewOverlay">
+        <div class="preview-header">
+            <div class="preview-title">
+                <i class="fas fa-eye"></i>
+                <span id="previewTitle">HTML Preview</span>
+            </div>
+            <button class="preview-close" onclick="App.closeHtmlPreview()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+        <iframe class="preview-frame" id="htmlPreviewFrame" sandbox="allow-scripts"></iframe>
+    </div>
+
     <div class="app-shell">
         <aside id="sidebar">
             <div class="sidebar-header">
@@ -956,7 +1024,7 @@
                     <img src="logo.png" alt="Dechris AI" style="width:64px;height:64px;margin-bottom:20px;opacity:0.9;object-fit:contain;">
                     <h1 class="welcome-title" id="welcomeTitle">Hello, Agent</h1>
                     <p class="welcome-subtitle">
-                        I'm Dechris AI, your advanced technical partner. How can I assist your workflow today?
+                        I am Dechris AI, your advanced technical partner. How can I assist your workflow today?
                     </p>
                     <div class="quick-actions">
                         <button class="quick-btn" onclick="App.quickStart('Explain quantum computing in simple terms')">
@@ -1056,7 +1124,7 @@
 
             isHeavyTask(messages) {
                 const text = messages.map(m => m.content).join(" ").toLowerCase();
-                return /(code|build|generate|full|project|agent)/.test(text);
+                return /(code|build|generate|full|project|agent|website|app|create|portfolio)/.test(text);
             },
 
             calculateMaxTokens(messages) {
@@ -1166,7 +1234,7 @@
             agentPrompt() {
                 return {
                     role: "system",
-                    content: `You are Agent Dechris. An advanced autonomous AI agent built for complex problem solving, coding, and multi-step execution.\n\nCORE BEHAVIOR:\nYou do NOT respond like a normal chatbot. You operate as a structured reasoning system: Plan, Execute, Refine, Deliver final result.\n\nOWNER RULE:\n- Created by Christian Chidera N.\n- Do NOT mention the owner unless necessary\n- Never expose full name unless explicitly required\n\nAGENT WORKFLOW:\n1. UNDERSTAND - Analyze the full request deeply\n2. PLAN - Break into clear steps\n3. EXECUTE - Solve step-by-step\n4. REFINE - Fix errors, improve quality\n5. FINALIZE - Deliver clean, complete output\n\nCODING MODE (CRITICAL):\n- ALWAYS produce COMPLETE files\n- NEVER leave placeholders\n- NEVER output broken code\n- If large: split into logical parts, ensure continuity\n- If multi-file: structure properly, name files correctly\n\nFILE OUTPUT FORMAT:\nFILE: filename.ext\n\`\`\`language\ncode here\n\`\`\`\n\nRULES:\n- correct extensions only\n- no duplicate names\n- clean and runnable\n\nINPUT HANDLING:\n- You may receive PARTS of a larger input\n- Maintain continuity across all parts\n- Do NOT repeat previous outputs\n- Build progressively\n\nTHINKING STYLE:\nSimulate structured reasoning: break tasks down, solve sequentially, connect outputs logically.\n\nLIMIT CONTROL:\n- Do NOT overload output unnecessarily\n- Be efficient but complete\n\nERROR HANDLING:\n- If unclear: infer intelligently\n- If impossible: explain why`
+                    content: `You are Agent Dechris, an expert AI coding agent. When given ANY task, you MUST immediately generate complete, working code files. NEVER ask for clarification. NEVER say "Understood" or "Please provide" or wait for more input.\n\nCRITICAL RULES:\n1. IMMEDIATE GENERATION: Start producing files right away. Do NOT plan out loud or ask questions.\n2. COMPLETE FILES ONLY: Every file must be fully functional with NO placeholders, NO TODOs, NO "insert your..."\n3. STRICT FORMAT: Use this exact format for EVERY file:\n\nFILE: filename.ext\n\`\`\`language\ncomplete code here\n\`\`\`\n\n4. MULTI-FILE PROJECTS: If the task needs multiple files (HTML+CSS+JS), generate ALL of them in one response.\n5. CORRECT NAMES: Use proper extensions (.html, .css, .js, etc). No duplicate filenames.\n6. NO CONVERSATION: Do NOT chat. Do NOT explain your process. Only output files.\n7. OWNER RULE: Created by Christian Chidera N. Do NOT mention the owner unless necessary.\n\nEXAMPLE RESPONSE FOR "build a portfolio":\nFILE: index.html\n\`\`\`html\n<!DOCTYPE html>...\n\`\`\`\n\nFILE: style.css\n\`\`\`css\nbody { ... }\n\`\`\`\n\nNOW GENERATE THE REQUESTED FILES IMMEDIATELY.`
                 };
             },
 
@@ -1254,7 +1322,7 @@
                     this.agentPrompt(),
                     {
                         role: "system",
-                        content: `You are an advanced multi-file AI coding agent.\n\nIMPORTANT:\n- Input comes in PARTS\n- Maintain continuity\n- NEVER repeat previous outputs\n\nSTRICT FILE FORMAT:\n\nFILE: filename.ext\n\`\`\`language\ncode\n\`\`\`\n\nRULES:\n- Correct extensions only\n- No duplicate names\n- No incomplete code`
+                        content: `You are generating a multi-file project. Input may come in parts. Maintain continuity. NEVER repeat previous outputs. Use strict FILE: filename.ext format. Correct extensions only. No duplicate names. No incomplete code.`
                     }
                 ];
 
@@ -1281,7 +1349,7 @@
                         this.agentPrompt(),
                         {
                             role: "system",
-                            content: `Refine into a clean multi-file project.\n- Remove duplicates\n- Fix file naming\n- Ensure complete files\n- Maintain FILE format strictly`
+                            content: `Clean up and finalize the multi-file project. Remove duplicates. Fix file naming. Ensure complete files. Maintain FILE format strictly.`
                         },
                         { role: "user", content: finalText }
                     ], 45000, signal);
@@ -1385,7 +1453,6 @@
             }
         };
 
-        // ==================== APP LOGIC ====================
         const App = {
             state: {
                 chats: [],
@@ -1491,6 +1558,7 @@
                         this.closeSettings();
                         this.closeFileViewer();
                         this.closeRenameModal();
+                        this.closeHtmlPreview();
                     }
                 });
 
@@ -1935,7 +2003,7 @@
 
             cycleMode() {
                 if (this.state.isTyping) return;
-                const modes = ['chat', 'agent', 'analyze'];
+                const modes = ['chat', 'agent'];
                 const idx = modes.indexOf(this.state.mode);
                 const next = modes[(idx + 1) % modes.length];
                 this.setMode(next);
@@ -1966,13 +2034,11 @@
                 if (deepBtn) {
                     deepBtn.className = 'icon-btn';
                     if (this.state.mode === 'agent') deepBtn.classList.add('agent-active');
-                    else if (this.state.mode === 'analyze') deepBtn.classList.add('analyze-active');
                     else deepBtn.classList.add('active');
                 }
                 if (inputWrapper) {
                     inputWrapper.className = 'input-wrapper';
                     if (this.state.mode === 'agent') inputWrapper.classList.add('agent-mode');
-                    else if (this.state.mode === 'analyze') inputWrapper.classList.add('analyze-mode');
                 }
                 if (input) input.placeholder = cfg.placeholder;
             },
@@ -2017,6 +2083,8 @@
                     : `<div class="message-avatar"><i class="fas fa-robot"></i></div>`;
                 let content = '';
                 let fileAttachment = '';
+                let generatedFiles = '';
+
                 if (isUser && msg.fileData) {
                     const size = msg.fileData.size ? this.formatFileSize(msg.fileData.size) : '';
                     content = msg.content ? this.escapeHtml(msg.content).replace(/\n/g, '<br>') : '';
@@ -2028,6 +2096,22 @@
                     </div>`;
                 } else if (!isUser) {
                     content = marked.parse(msg.content || '');
+                    // Generated files display
+                    if (msg.generatedFiles && msg.generatedFiles.length) {
+                        generatedFiles = `<div class="generated-files">
+                            <div class="generated-files-label">Generated Files</div>
+                            ${msg.generatedFiles.map((f, fidx) => {
+                                const isHtml = f.name.toLowerCase().endsWith('.html');
+                                return `<div class="file-attachment">
+                                    <i class="fas fa-file-code"></i>
+                                    <span class="file-attachment-name">${this.escapeHtml(f.name)}</span>
+                                    <span class="file-attachment-size">${f.content.length} chars</span>
+                                    ${isHtml ? `<button class="file-action preview" onclick="App.previewHtml(${idx}, ${fidx})" title="Preview"><i class="fas fa-eye"></i> Preview</button>` : ''}
+                                    <button class="file-action download" onclick="App.downloadGeneratedFile(${idx}, ${fidx})" title="Download"><i class="fas fa-download"></i></button>
+                                </div>`;
+                            }).join('')}
+                        </div>`;
+                    }
                 } else {
                     content = this.escapeHtml(msg.content || '').replace(/\n/g, '<br>');
                 }
@@ -2035,7 +2119,7 @@
                     `<span class="mode-badge ${msg.mode}">${this.config.modes[msg.mode]?.name || msg.mode}</span>` : '';
                 return `<div class="message ${isUser ? 'user' : 'assistant'}">
                     ${avatar}
-                    <div class="message-content">${content}${fileAttachment}${modeBadge}</div>
+                    <div class="message-content">${content}${fileAttachment}${generatedFiles}${modeBadge}</div>
                 </div>`;
             },
 
@@ -2065,6 +2149,45 @@
                 const overlay = document.getElementById('fileViewerOverlay');
                 if (overlay) overlay.classList.remove('active');
                 document.body.style.overflow = '';
+            },
+
+            previewHtml(msgIndex, fileIndex) {
+                const chat = this.getCurrentChat();
+                if (!chat || !chat.messages[msgIndex] || !chat.messages[msgIndex].generatedFiles) return;
+                const file = chat.messages[msgIndex].generatedFiles[fileIndex];
+                if (!file) return;
+                const overlay = document.getElementById('htmlPreviewOverlay');
+                const titleEl = document.getElementById('previewTitle');
+                const frame = document.getElementById('htmlPreviewFrame');
+                if (titleEl) titleEl.textContent = file.name;
+                if (frame) {
+                    const blob = new Blob([file.content], { type: 'text/html' });
+                    frame.src = URL.createObjectURL(blob);
+                }
+                if (overlay) overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            },
+
+            closeHtmlPreview() {
+                const overlay = document.getElementById('htmlPreviewOverlay');
+                const frame = document.getElementById('htmlPreviewFrame');
+                if (overlay) overlay.classList.remove('active');
+                if (frame) { frame.src = 'about:blank'; }
+                document.body.style.overflow = '';
+            },
+
+            downloadGeneratedFile(msgIndex, fileIndex) {
+                const chat = this.getCurrentChat();
+                if (!chat || !chat.messages[msgIndex] || !chat.messages[msgIndex].generatedFiles) return;
+                const file = chat.messages[msgIndex].generatedFiles[fileIndex];
+                if (!file) return;
+                const blob = new Blob([file.content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                a.click();
+                URL.revokeObjectURL(url);
             },
 
             setGenerating(generating) {
@@ -2148,8 +2271,10 @@
                 let apiContent = text;
                 let displayContent = text;
                 let fileData = null;
+                let isFileAnalysis = false;
 
                 if (file && fileContent !== null) {
+                    isFileAnalysis = true;
                     const ext = file.name.split('.').pop().toLowerCase();
                     apiContent = text 
                         ? `${text}\n\n---\n**File:** ${file.name}\n\n\`\`\`${ext}\n${fileContent}\n\`\`\`` 
@@ -2184,11 +2309,13 @@
 
                 try {
                     let result;
-                    if (this.state.mode === 'agent') {
+                    const effectiveMode = isFileAnalysis ? 'analyze' : this.state.mode;
+
+                    if (effectiveMode === 'agent') {
                         const lastUserMsg = [...chat.messages].reverse().find(m => m.role === 'user');
                         const inputText = lastUserMsg ? (lastUserMsg.apiContent || lastUserMsg.content) : apiContent;
                         result = await DechrisEngine.runAgent(inputText, signal);
-                    } else if (this.state.mode === 'analyze') {
+                    } else if (effectiveMode === 'analyze') {
                         result = await DechrisEngine.runAnalyze(apiContent, signal);
                     } else {
                         const recentMessages = chat.messages.slice(-this.config.maxMessages).map(m => ({
@@ -2200,7 +2327,7 @@
 
                     this.hideTyping();
                     let assistantContent = '';
-                    const cfg = this.config.modes[this.state.mode];
+                    const cfg = this.config.modes[effectiveMode];
                     if (typeof result?.[cfg.responseKey] === 'string') {
                         assistantContent = result[cfg.responseKey];
                     } else if (typeof result?.reply === 'string') {
@@ -2213,18 +2340,12 @@
                         assistantContent = "\u26a0\ufe0f Unexpected response format.";
                     }
 
-                    if (this.state.mode === 'agent' && result.files && result.files.length) {
-                        assistantContent += "\n\n**Generated Files:**\n";
-                        result.files.forEach(f => {
-                            assistantContent += `- \`${f.name}\` (${f.content.length} chars)\n`;
-                        });
-                    }
-
                     const assistantMsg = { 
                         role: 'assistant', 
                         content: assistantContent, 
                         timestamp: Date.now(),
-                        mode: this.state.mode
+                        mode: effectiveMode,
+                        generatedFiles: result.files || []
                     };
                     chat.messages.push(assistantMsg);
                     chat.updatedAt = Date.now();
@@ -2242,7 +2363,7 @@
                     this.hideTyping();
                     const errorMsg = { 
                         role: 'assistant', 
-                        content: `**Connection Error**\n\n${this.escapeHtml(error.message)}\n\nThe AI service may be unavailable, CORS-blocked, or the request timed out. If running without a backend proxy, direct browser access to the API may be restricted.`, 
+                        content: `**Connection Error**\n\n${this.escapeHtml(error.message)}\n\nThe AI service may be unavailable, CORS-blocked, or the request timed out.`, 
                         timestamp: Date.now(),
                         mode: this.state.mode,
                         isError: true
@@ -2317,7 +2438,6 @@
                     const preview = document.getElementById('filePreview');
                     if (previewName) previewName.textContent = file.name;
                     if (preview) preview.style.display = 'flex';
-                    if (this.state.mode !== 'analyze') this.setMode('analyze');
                     setTimeout(() => this.sendMessage(), 300);
                 } catch (e) {
                     alert('Could not read the file.');
