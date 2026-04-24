@@ -1302,26 +1302,45 @@ NOW GENERATE THE REQUESTED FILES IMMEDIATELY. START WITH "FILE:". NO TALK.`
 
             extractFiles(text) {
                 const files = [];
-                const regex = /FILE:\s*(.+?)\n\`\`\`[\w]*\n([\s\S]*?)\`\`\`/gi;
-                let match;
-                while ((match = regex.exec(text)) !== null) {
-                    const fileName = this.sanitizeFileName(match[1]);
-                    const content = match[2]?.trim();
-                    if (!content) continue;
-                    files.push({ name: fileName, content });
+                if (!text || typeof text !== "string") return files;
+
+                // Normalize line endings
+                const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+                // Pattern 1: FILE: filename.ext followed by code block
+                const patterns = [
+                    /FILE:\s*(.+?)\n+```[\w+]*\n([\s\S]*?)```/gi,
+                    /\*?\*?FILE:\*?\*?\s*(.+?)\n+```[\w+]*\n([\s\S]*?)```/gi,
+                    /FILE:\s*(.+?)\s+```[\w+]*\n([\s\S]*?)```/gi,
+                ];
+
+                for (const regex of patterns) {
+                    regex.lastIndex = 0;
+                    let match;
+                    while ((match = regex.exec(normalized)) !== null) {
+                        const rawName = match[1].replace(/^\*+|\*+$/g, "").replace(/[\:*?"<>|]/g, "").trim();
+                        const fileName = this.sanitizeFileName(rawName);
+                        const content = match[2] || "";
+                        if (fileName && content.length > 0) {
+                            files.push({ name: fileName, content });
+                        }
+                    }
                 }
-                if (!files.length && text.includes("\`\`\`")) {
-                    const fallbackRegex = /\`\`\`(\w*)\n([\s\S]*?)\`\`\`/g;
+
+                // Fallback: grab any code blocks if no FILE: headers found
+                if (!files.length && normalized.includes("```")) {
+                    const fallbackRegex = /```(\w*)\n([\s\S]*?)```/g;
                     let i = 1;
                     let m;
-                    while ((m = fallbackRegex.exec(text)) !== null) {
+                    while ((m = fallbackRegex.exec(normalized)) !== null) {
                         const ext = m[1] || "txt";
-                        const content = m[2]?.trim();
-                        if (!content) continue;
+                        const content = m[2] || "";
+                        if (!content.trim()) continue;
                         files.push({ name: `file_${i}.${ext}`, content });
                         i++;
                     }
                 }
+
                 return files;
             },
 
@@ -1597,22 +1616,18 @@ NOW GENERATE THE REQUESTED FILES IMMEDIATELY. START WITH "FILE:". NO TALK.`
                         this.closeRenameModal();
                         this.closeHtmlPreview();
                     }
-                    // Ctrl/Cmd + Enter to send
                     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
                         e.preventDefault();
                         this.sendMessage();
                     }
-                    // Ctrl/Cmd + N for new chat
                     if (e.key === 'n' && (e.ctrlKey || e.metaKey)) {
                         e.preventDefault();
                         this.createNewChat();
                     }
-                    // Ctrl/Cmd + , for settings
                     if (e.key === ',' && (e.ctrlKey || e.metaKey)) {
                         e.preventDefault();
                         this.openSettings();
                     }
-                    // Ctrl/Cmd + / to focus input
                     if (e.key === '/' && (e.ctrlKey || e.metaKey)) {
                         e.preventDefault();
                         const input = document.getElementById('userInput');
@@ -2532,7 +2547,6 @@ NOW GENERATE THE REQUESTED FILES IMMEDIATELY. START WITH "FILE:". NO TALK.`
             handleEnter(event) {
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 if (isMobile) {
-                    // Mobile: Enter creates new paragraph, send button submits
                     return;
                 }
                 if (event.key === 'Enter' && !event.shiftKey) {
