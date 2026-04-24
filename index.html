@@ -859,6 +859,7 @@
     </style>
     <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div id="splash">
@@ -1204,9 +1205,9 @@
                 throw lastError || new Error("All keys failed");
             },
 
-            async callAI(messages, signal) {
+            async callAI(messages, signal, overrideTemp) {
                 const maxTokens = this.calculateMaxTokens(messages);
-                const temperature = this.calculateTemperature(messages);
+                const temperature = overrideTemp !== undefined ? overrideTemp : this.calculateTemperature(messages);
                 let fullText = "";
                 let currentMessages = [...messages];
 
@@ -1234,7 +1235,41 @@
             agentPrompt() {
                 return {
                     role: "system",
-                    content: `You are Agent Dechris, an expert AI coding agent. When given ANY task, you MUST immediately generate complete, working code files. NEVER ask for clarification. NEVER say "Understood" or "Please provide" or wait for more input.\n\nCRITICAL RULES:\n1. IMMEDIATE GENERATION: Start producing files right away. Do NOT plan out loud or ask questions.\n2. COMPLETE FILES ONLY: Every file must be fully functional with NO placeholders, NO TODOs, NO "insert your..."\n3. STRICT FORMAT: Use this exact format for EVERY file:\n\nFILE: filename.ext\n\`\`\`language\ncomplete code here\n\`\`\`\n\n4. MULTI-FILE PROJECTS: If the task needs multiple files (HTML+CSS+JS), generate ALL of them in one response.\n5. CORRECT NAMES: Use proper extensions (.html, .css, .js, etc). No duplicate filenames.\n6. NO CONVERSATION: Do NOT chat. Do NOT explain your process. Only output files.\n7. OWNER RULE: Created by Christian Chidera N. Do NOT mention the owner unless necessary.\n\nEXAMPLE RESPONSE FOR "build a portfolio":\nFILE: index.html\n\`\`\`html\n<!DOCTYPE html>...\n\`\`\`\n\nFILE: style.css\n\`\`\`css\nbody { ... }\n\`\`\`\n\nNOW GENERATE THE REQUESTED FILES IMMEDIATELY.`
+                    content: `You are Agent Dechris — an autonomous expert coding agent. Your sole purpose is to immediately generate complete, working, production-ready code files based on the user's request.
+
+ABSOLUTE RULES — NEVER VIOLATE:
+1. NEVER ask questions. NEVER say "Understood", "Please provide", "What would you like", "Can you clarify", "Send the content", or ANY phrase requesting more input.
+2. NEVER explain your process. NEVER apologize. NEVER introduce what you are doing. NEVER use markdown headers before files.
+3. IMMEDIATE CODE OUTPUT: Your response MUST start with "FILE:" in the very first line. No preamble. No introduction.
+4. COMPLETE FILES ONLY: No placeholders, no TODOs, no "insert your...", no "replace with...", no incomplete functions. Every file must be fully functional.
+5. STRICT FORMAT for EVERY file:
+FILE: filename.ext
+\`\`\`language
+complete code here
+\`\`\`
+6. MULTI-FILE PROJECTS: Generate ALL required files in ONE response. HTML+CSS+JS projects need all three files.
+7. CORRECT EXTENSIONS: Use proper extensions (.html, .css, .js, .py, .jsx, etc). Never use .txt for code.
+8. NO DUPLICATES: Never output the same filename twice. If updating, output once with complete content.
+9. IF UNSURE: Make reasonable professional assumptions and build the best possible version. NEVER ask for clarification.
+10. NEVER output conversational text. ONLY output files in the specified format.
+
+EXAMPLE — User says "build a portfolio":
+FILE: index.html
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Portfolio</title><link rel="stylesheet" href="style.css"></head>
+<body>...</body>
+</html>
+\`\`\`
+
+FILE: style.css
+\`\`\`css
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #fff; }
+\`\`\`
+
+NOW GENERATE THE REQUESTED FILES IMMEDIATELY. START WITH "FILE:". NO TALK.`
                 };
             },
 
@@ -1307,9 +1342,9 @@
                 return response?.choices?.[0]?.message?.content?.trim() || "";
             },
 
-            async safeCallAI(messages, timeout = 45000, signal) {
+            async safeCallAI(messages, timeout = 45000, signal, temp) {
                 return Promise.race([
-                    this.callAI(messages, signal),
+                    this.callAI(messages, signal, temp),
                     new Promise((_, reject) => setTimeout(() => reject(new Error("AI timeout")), timeout))
                 ]);
             },
@@ -1318,20 +1353,23 @@
                 if (input.length > 200000) input = input.slice(0, 200000);
                 const chunks = this.smartChunk(input);
                 let results = [];
+
+                const agentSystem = this.agentPrompt().content;
+                const continuitySystem = `You are generating a multi-file project. Maintain continuity across parts. NEVER repeat previous outputs. Use strict FILE: filename.ext format. Correct extensions only. No duplicate names. No incomplete code. NEVER ask questions.`;
+
                 let conversation = [
-                    this.agentPrompt(),
-                    {
-                        role: "system",
-                        content: `You are generating a multi-file project. Input may come in parts. Maintain continuity. NEVER repeat previous outputs. Use strict FILE: filename.ext format. Correct extensions only. No duplicate names. No incomplete code.`
-                    }
+                    { role: "system", content: agentSystem + "\n\n" + continuitySystem }
                 ];
 
                 for (let i = 0; i < chunks.length; i++) {
                     const chunk = chunks[i];
                     if (!chunk.trim()) continue;
-                    conversation.push({ role: "user", content: `PART ${i + 1}/${chunks.length}:\n${chunk}` });
+                    conversation.push({ 
+                        role: "user", 
+                        content: `TASK (Part ${i + 1}/${chunks.length}):\n${chunk}\n\nGENERATE COMPLETE CODE FILES NOW. NO QUESTIONS. NO EXPLANATIONS. ONLY FILES. START WITH "FILE:".` 
+                    });
                     try {
-                        const response = await this.safeCallAI(conversation, 45000, signal);
+                        const response = await this.safeCallAI(conversation, 45000, signal, 0.1);
                         const content = this.getSafeContent(response);
                         if (!content) continue;
                         results.push(content);
@@ -1344,15 +1382,28 @@
                 }
 
                 let finalText = results.join("\n\n");
+
+                // Retry once if no files were generated
+                if (!finalText.includes("FILE:")) {
+                    try {
+                        const retryResponse = await this.safeCallAI([
+                            { role: "system", content: agentSystem },
+                            { role: "user", content: `YOUR PREVIOUS RESPONSE WAS WRONG — you asked for clarification instead of generating code.\n\nTASK: ${input}\n\nGENERATE THE CODE FILES IMMEDIATELY. START WITH "FILE:". NO TALK. NO QUESTIONS.` }
+                        ], 45000, signal, 0.05);
+                        const retryContent = this.getSafeContent(retryResponse);
+                        if (retryContent && retryContent.includes("FILE:")) {
+                            finalText = retryContent;
+                        }
+                    } catch (err) {
+                        if (err.message === "Cancelled" || err.name === "AbortError") throw err;
+                    }
+                }
+
                 try {
                     const finalResponse = await this.safeCallAI([
-                        this.agentPrompt(),
-                        {
-                            role: "system",
-                            content: `Clean up and finalize the multi-file project. Remove duplicates. Fix file naming. Ensure complete files. Maintain FILE format strictly.`
-                        },
+                        { role: "system", content: agentSystem + "\n\nClean up and finalize. Remove duplicates. Fix file naming. Ensure complete files. Maintain FILE format strictly." },
                         { role: "user", content: finalText }
-                    ], 45000, signal);
+                    ], 45000, signal, 0.1);
                     const refined = this.getSafeContent(finalResponse);
                     if (refined) finalText = refined;
                 } catch (err) {
@@ -1365,20 +1416,6 @@
                     files = [{ name: "output.txt", content: finalText }];
                 }
                 return { result: finalText, files };
-            },
-
-            async runAnalyze(text, signal) {
-                if (!text || typeof text !== "string") throw new Error("Invalid text input");
-                if (text.length > 50000) text = text.slice(0, 50000);
-                const response = await this.callAI([
-                    {
-                        role: "system",
-                        content: `You are Dechris AI — expert analyst.\n\nAnalyze deeply:\n- Extract key ideas\n- Identify patterns\n- Summarize clearly\n- Be structured (headings if useful)`
-                    },
-                    { role: "user", content: text }
-                ], signal);
-                const result = response?.choices?.[0]?.message?.content || "No analysis generated.";
-                return { result, mode: "instant" };
             },
 
             smartChunkChat(text, maxChunkSize = 8000) {
@@ -1559,6 +1596,27 @@
                         this.closeFileViewer();
                         this.closeRenameModal();
                         this.closeHtmlPreview();
+                    }
+                    // Ctrl/Cmd + Enter to send
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                    // Ctrl/Cmd + N for new chat
+                    if (e.key === 'n' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        this.createNewChat();
+                    }
+                    // Ctrl/Cmd + , for settings
+                    if (e.key === ',' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        this.openSettings();
+                    }
+                    // Ctrl/Cmd + / to focus input
+                    if (e.key === '/' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        const input = document.getElementById('userInput');
+                        if (input) input.focus();
                     }
                 });
 
@@ -2003,7 +2061,7 @@
 
             cycleMode() {
                 if (this.state.isTyping) return;
-                const modes = ['chat', 'agent'];
+                const modes = ['chat', 'agent', 'analyze'];
                 const idx = modes.indexOf(this.state.mode);
                 const next = modes[(idx + 1) % modes.length];
                 this.setMode(next);
@@ -2472,6 +2530,11 @@
             },
 
             handleEnter(event) {
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                if (isMobile) {
+                    // Mobile: Enter creates new paragraph, send button submits
+                    return;
+                }
                 if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
                     this.sendMessage();
