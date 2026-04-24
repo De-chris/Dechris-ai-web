@@ -29,6 +29,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
 
@@ -60,8 +63,6 @@
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --font-mono: 'Fira Code', 'Consolas', monospace;
-            --safe-top: env(safe-area-inset-top);
-            --safe-bottom: env(safe-area-inset-bottom);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -76,11 +77,13 @@
             -webkit-font-smoothing: antialiased;
             touch-action: manipulation;
             overscroll-behavior-y: none;
-            user-select: none;
+            position: fixed;
+            inset: 0;
         }
         body * { user-select: text; }
         body .no-select, body button, body .icon-btn, body .send-btn, body .quick-btn,
-        body .chat-item, body .model-selector, body .menu-toggle {
+        body .chat-item, body .model-selector, body .menu-toggle, body .file-card,
+        body .side-panel-btn, body .side-panel-tab, body .msg-action {
             user-select: none;
         }
 
@@ -202,49 +205,123 @@
         }
         .file-btn:hover { background: var(--bg-hover); border-color: var(--border-hover); }
 
-        /* File Content Viewer */
-        .file-viewer-overlay {
-            position: fixed; inset: 0; z-index: 2500;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(16px);
-            display: none; flex-direction: column;
-            opacity: 0; transition: opacity 0.3s ease;
+        /* Side Panel (Kimi-style) */
+        .side-panel-overlay {
+            position: fixed; inset: 0; z-index: 2999;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            display: none; opacity: 0;
+            transition: opacity 0.3s ease;
         }
-        .file-viewer-overlay.active { display: flex; opacity: 1; }
-        .file-viewer-header {
+        .side-panel-overlay.active { display: block; opacity: 1; }
+        .side-panel {
+            position: fixed;
+            top: 0; right: 0;
+            width: 55%; height: 100dvh;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            z-index: 3000;
+            transform: translateX(100%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+            box-shadow: var(--shadow-lg);
+        }
+        .side-panel.open { transform: translateX(0); }
+        @media (max-width: 768px) {
+            .side-panel { width: 100%; }
+        }
+        .side-panel-header {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 24px;
+            padding: 14px 20px;
             border-bottom: 1px solid var(--border);
             background: var(--bg-glass);
             flex-shrink: 0;
         }
-        .file-viewer-title {
-            display: flex; align-items: center; gap: 12px;
-            font-weight: 600; font-size: 0.95rem;
+        .side-panel-title { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.95rem; }
+        .side-panel-lang {
+            font-size: 0.7rem; padding: 2px 8px;
+            background: var(--accent-glow); color: var(--accent);
+            border-radius: 4px; font-weight: 500; text-transform: uppercase;
         }
-        .file-viewer-title i { color: var(--accent-analyze); }
-        .file-viewer-close {
+        .side-panel-actions { display: flex; align-items: center; gap: 6px; }
+        .side-panel-tab {
+            background: none; border: 1px solid var(--border);
+            color: var(--text-secondary); font-size: 0.8rem;
+            padding: 5px 12px; border-radius: var(--radius-sm);
+            cursor: pointer; transition: var(--transition);
+            font-family: var(--font-sans); font-weight: 500;
+        }
+        .side-panel-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .side-panel-tab.active {
+            background: var(--accent); color: white; border-color: var(--accent);
+        }
+        .side-panel-btn {
             background: none; border: none; color: var(--text-secondary);
-            font-size: 1.2rem; cursor: pointer; padding: 6px 10px;
+            font-size: 0.95rem; cursor: pointer; padding: 6px 10px;
             border-radius: var(--radius-sm); transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
         }
-        .file-viewer-close:hover { color: var(--text-primary); background: var(--bg-hover); }
-        .file-viewer-body {
-            flex: 1; overflow: auto; padding: 24px;
+        .side-panel-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .side-panel-btn.close:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+        .side-panel-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .side-panel-content {
+            flex: 1; overflow: auto; padding: 20px;
+            display: none;
         }
-        .file-viewer-content {
-            max-width: 900px; margin: 0 auto;
-            background: var(--bg-secondary);
+        .side-panel-content.active { display: block; }
+        .side-panel-content pre {
+            margin: 0; background: #0d0d12;
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: 16px; font-family: var(--font-mono);
+            font-size: 0.85rem; line-height: 1.6;
+        }
+        .side-panel-content pre code { background: none; padding: 0; }
+        .side-panel-content iframe {
+            width: 100%; height: 100%; border: none;
+            background: white; border-radius: var(--radius-md);
+        }
+
+        /* File Cards */
+        .file-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .file-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px;
+            background: var(--bg-tertiary);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            overflow: hidden;
+            cursor: pointer; transition: var(--transition);
         }
-        .file-viewer-content pre {
-            margin: 0; padding: 20px;
-            font-family: var(--font-mono); font-size: 0.85rem;
-            line-height: 1.7; color: var(--text-primary);
-            overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+        .file-card:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
+        .file-card-icon {
+            width: 40px; height: 40px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; flex-shrink: 0;
+        }
+        .file-card-icon.html { background: rgba(227, 79, 38, 0.15); color: #e34f26; }
+        .file-card-icon.css { background: rgba(38, 77, 228, 0.15); color: #264de4; }
+        .file-card-icon.js { background: rgba(247, 223, 30, 0.15); color: #f7df1e; }
+        .file-card-icon.py { background: rgba(55, 118, 171, 0.15); color: #3776ab; }
+        .file-card-icon.json { background: rgba(128, 189, 255, 0.15); color: #80bdff; }
+        .file-card-icon.md { background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); }
+        .file-card-icon.pdf { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .file-card-icon.txt { background: rgba(156, 163, 175, 0.15); color: var(--text-secondary); }
+        .file-card-icon.default { background: var(--bg-hover); color: var(--text-secondary); }
+        .file-card-info { flex: 1; min-width: 0; }
+        .file-card-name {
+            font-weight: 500; font-size: 0.85rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .file-card-meta { font-size: 0.75rem; color: var(--text-muted); }
 
         /* Sidebar */
         #sidebar {
@@ -370,7 +447,6 @@
         .model-selector:hover { border-color: var(--border-hover); }
         .model-selector i:first-child { color: var(--accent); }
         .model-selector.agent i:first-child { color: var(--accent-agent); }
-        .model-selector.analyze i:first-child { color: var(--accent-analyze); }
         .icon-btn {
             background: none; border: none; color: var(--text-secondary);
             font-size: 1rem; cursor: pointer; padding: 8px;
@@ -380,7 +456,6 @@
         .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
         .icon-btn.active { color: var(--accent); background: var(--accent-glow); }
         .icon-btn.agent-active { color: var(--accent-agent); background: var(--accent-agent-glow); }
-        .icon-btn.analyze-active { color: var(--accent-analyze); background: var(--accent-analyze-glow); }
         .icon-btn:disabled {
             opacity: 0.3; cursor: not-allowed; pointer-events: none;
         }
@@ -438,10 +513,10 @@
             padding-bottom: 8px;
         }
         .messages-list.hidden { display: none; }
-        .messages-list.typing-active { padding-bottom: 24px; }
         .message {
             display: flex; gap: 16px;
             animation: message-in 0.3s ease;
+            position: relative;
         }
         @keyframes message-in {
             from { opacity: 0; transform: translateY(10px); }
@@ -567,6 +642,22 @@
             margin: 1.5em 0;
         }
 
+        /* Message Actions */
+        .msg-actions {
+            display: flex; align-items: center; gap: 4px;
+            margin-top: 6px; padding-left: 48px;
+            opacity: 0; transition: opacity 0.2s ease;
+        }
+        .message:hover .msg-actions { opacity: 1; }
+        .msg-action {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 0.75rem; cursor: pointer; padding: 4px 8px;
+            border-radius: 4px; transition: var(--transition);
+            display: flex; align-items: center; gap: 4px;
+        }
+        .msg-action:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .msg-action i { font-size: 0.7rem; }
+
         /* System broadcast */
         .system-broadcast-header {
             display: flex; align-items: center; gap: 8px;
@@ -657,10 +748,6 @@
             border-color: var(--accent-agent);
             box-shadow: 0 0 0 3px var(--accent-agent-glow), var(--shadow-md);
         }
-        .input-wrapper.analyze-mode:focus-within {
-            border-color: var(--accent-analyze);
-            box-shadow: 0 0 0 3px var(--accent-analyze-glow), var(--shadow-md);
-        }
         #userInput {
             flex: 1; background: none; border: none;
             color: var(--text-primary); font-size: 0.95rem;
@@ -721,7 +808,7 @@
         }
         .file-preview-remove:hover { color: #ef4444; }
 
-        /* Loading State - disable interactions */
+        /* Loading State */
         body.app-loading .icon-btn:not(.cancel-btn),
         body.app-loading .send-btn:not(.cancel-btn),
         body.app-loading .quick-btn,
@@ -730,7 +817,8 @@
         body.app-loading .model-selector,
         body.app-loading .menu-toggle,
         body.app-loading .file-preview-remove,
-        body.app-loading #fileInputTrigger {
+        body.app-loading #fileInputTrigger,
+        body.app-loading .msg-action {
             opacity: 0.4;
             pointer-events: none;
             cursor: not-allowed;
@@ -738,12 +826,24 @@
         body.app-loading .send-btn { display: none; }
         body.app-loading .cancel-btn { display: flex; }
 
-        /* Mobile App-Like */
+        /* Drag & Drop Overlay */
+        .drag-overlay {
+            position: fixed; inset: 0; z-index: 5000;
+            background: rgba(59, 130, 246, 0.15);
+            border: 3px dashed var(--accent);
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+        }
+        .drag-overlay.active { display: flex; }
+        .drag-overlay-content {
+            text-align: center; color: var(--accent);
+            font-size: 1.2rem; font-weight: 600;
+        }
+        .drag-overlay-content i { font-size: 3rem; margin-bottom: 12px; display: block; }
+
+        /* Mobile */
         @media (max-width: 768px) {
-            body {
-                position: fixed;
-                inset: 0;
-            }
             #sidebar {
                 position: fixed; left: 0; top: 0; z-index: 200;
                 transform: translateX(-100%);
@@ -754,11 +854,10 @@
             .welcome-title { font-size: 1.6rem; }
             .quick-actions { grid-template-columns: 1fr; }
             .message-content { max-width: calc(100% - 50px); }
-            .file-viewer-overlay { padding: 0; }
             .chat-item-actions { opacity: 1; }
-            .main-content {
-                width: 100vw;
-            }
+            .main-content { width: 100vw; }
+            .msg-actions { opacity: 1; }
+            .file-cards-grid { grid-template-columns: 1fr; }
         }
 
         .sidebar-overlay {
@@ -782,7 +881,6 @@
         }
         .mode-badge.chat { background: var(--accent-glow); color: var(--accent); }
         .mode-badge.agent { background: var(--accent-agent-glow); color: var(--accent-agent); }
-        .mode-badge.analyze { background: var(--accent-analyze-glow); color: var(--accent-analyze); }
 
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(20px); }
@@ -810,6 +908,7 @@
         }
         .toast.success { border-color: var(--accent-analyze); color: var(--accent-analyze); }
         .toast.error { border-color: #ef4444; color: #ef4444; }
+        .toast.info { border-color: var(--accent); color: var(--accent); }
         @keyframes toast-in {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -819,13 +918,34 @@
             to { opacity: 0; transform: translateY(10px); }
         }
 
+        /* Keyboard shortcut hint */
+        .kbd {
+            display: inline-block;
+            padding: 2px 6px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+        }
+
     </style>
     <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Drag & Drop Overlay -->
+    <div class="drag-overlay" id="dragOverlay">
+        <div class="drag-overlay-content">
+            <i class="fas fa-cloud-upload-alt"></i>
+            Drop file to attach
+        </div>
+    </div>
 
     <!-- Splash Screen -->
     <div id="splash">
@@ -870,12 +990,6 @@
                     <input type="text" id="settingsName" class="setting-input" placeholder="Your name">
                 </div>
                 <div class="setting-item">
-                    <label class="setting-label">DeepThink Mode</label>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;">
-                        Enhanced reasoning for complex tasks. Slower but more thorough.
-                    </p>
-                </div>
-                <div class="setting-item">
                     <label class="setting-label">Notifications</label>
                     <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer;">
                         <input type="checkbox" id="notifToggle" checked style="accent-color: var(--accent);">
@@ -893,6 +1007,15 @@
                     <button class="danger-btn" onclick="App.clearAllData()">
                         <i class="fas fa-trash-alt"></i> Clear All Data
                     </button>
+                </div>
+                <div class="setting-item" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+                    <label class="setting-label">Keyboard Shortcuts</label>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.8;">
+                        <span class="kbd">Ctrl</span> + <span class="kbd">K</span> New Chat<br>
+                        <span class="kbd">Ctrl</span> + <span class="kbd">/</span> Focus Input<br>
+                        <span class="kbd">Ctrl</span> + <span class="kbd">B</span> Toggle Sidebar<br>
+                        <span class="kbd">Esc</span> Close Panels
+                    </p>
                 </div>
                 <button onclick="App.saveSettings()" class="save-btn" style="margin-top: 10px;">Save Changes</button>
             </div>
@@ -916,25 +1039,34 @@
         </div>
     </div>
 
-    <!-- File Content Viewer -->
-    <div class="file-viewer-overlay" id="fileViewerOverlay">
-        <div class="file-viewer-header">
-            <div class="file-viewer-title">
-                <i class="fas fa-file-code"></i>
-                <span id="fileViewerName">File Content</span>
+    <!-- Side Panel (Kimi-style) -->
+    <div class="side-panel-overlay" id="sidePanelOverlay" onclick="App.closeSidePanel()"></div>
+    <div class="side-panel" id="sidePanel">
+        <div class="side-panel-header">
+            <div class="side-panel-title">
+                <i class="fas fa-file-code" id="sidePanelIcon"></i>
+                <span id="sidePanelFileName">file.js</span>
+                <span class="side-panel-lang" id="sidePanelLang">javascript</span>
             </div>
-            <button class="file-viewer-close" onclick="App.closeFileViewer()">
-                <i class="fas fa-times"></i> Close
-            </button>
+            <div class="side-panel-actions">
+                <button class="side-panel-tab active" id="tabCode" onclick="App.switchPanelTab('code')">Code</button>
+                <button class="side-panel-tab" id="tabPreview" onclick="App.switchPanelTab('preview')">Preview</button>
+                <button class="side-panel-btn" onclick="App.copyPanelContent()" title="Copy"><i class="fas fa-copy"></i></button>
+                <button class="side-panel-btn" onclick="App.downloadPanelFile()" title="Download"><i class="fas fa-download"></i></button>
+                <button class="side-panel-btn close" onclick="App.closeSidePanel()" title="Close"><i class="fas fa-times"></i></button>
+            </div>
         </div>
-        <div class="file-viewer-body">
-            <div class="file-viewer-content">
-                <pre id="fileViewerContent"><code></code></pre>
+        <div class="side-panel-body">
+            <div class="side-panel-content active" id="panelCodeView">
+                <pre><code id="panelCodeBlock"></code></pre>
+            </div>
+            <div class="side-panel-content" id="panelPreviewView">
+                <iframe id="panelPreviewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
             </div>
         </div>
     </div>
 
-    <!-- Hidden file inputs for import -->
+    <!-- Hidden file inputs -->
     <input type="file" id="importZipInput" style="display:none" accept=".zip" onchange="App.handleImportZip(this)">
     <input type="file" id="importTxtInput" style="display:none" accept=".txt" onchange="App.handleImportTxt(this)">
 
@@ -975,7 +1107,7 @@
                 </div>
             </div>
             <div class="nav-right">
-                <button class="icon-btn" onclick="App.createNewChat()" title="New Chat">
+                <button class="icon-btn" onclick="App.createNewChat()" title="New Chat (Ctrl+K)">
                     <i class="fas fa-edit"></i>
                 </button>
                 <img src="logo.png" width="28" height="28" style="border-radius: 50%; opacity: 0.9; object-fit: cover;">
@@ -1047,7 +1179,7 @@
                     </div>
                 </div>
                 <div class="input-footer">
-                    <span>Dechris AI may produce inaccurate information. Verify critical data.</span>
+                    <span id="inputHint">Dechris AI may produce inaccurate information. Verify critical data.</span>
                     <span id="msgCount">0 messages</span>
                 </div>
             </div>
@@ -1055,8 +1187,6 @@
     </main>
 
     <script src="keys.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
 
 (function() {
@@ -1134,6 +1264,10 @@
         return response?.choices?.[0]?.message?.content?.trim() || '';
     }
 
+    function stripFileBlocks(text) {
+        return text.replace(/FILE:\s*(.+?)\n\`\`\`[\w]*\n[\s\S]*?\`\`\`/gi, '').trim();
+    }
+
     function systemPrompt() {
         return {
             role: 'system',
@@ -1176,8 +1310,7 @@
         };
     }
 
-    // ===================== AI ROUTER (PORTED FROM BACKEND) =====================
-
+    // ===================== AI ROUTER =====================
     const BASE_URL = 'https://api.longcat.chat/openai/v1/chat/completions';
     const MAX_RETRIES_PER_KEY = 3;
     const INITIAL_BACKOFF = 500;
@@ -1187,9 +1320,7 @@
 
     function estimateTokens(messages) {
         let totalChars = 0;
-        for (const msg of messages) {
-            totalChars += (msg.content || '').length;
-        }
+        for (const msg of messages) totalChars += (msg.content || '').length;
         return Math.ceil(totalChars / 4);
     }
 
@@ -1213,12 +1344,8 @@
 
     function looksCutOff(text) {
         if (!text) return false;
-        return (
-            text.endsWith('}') === false &&
-            text.endsWith('\`\`\`') === false &&
-            text.endsWith('.') === false &&
-            text.length > 100
-        );
+        return text.endsWith('}') === false && text.endsWith('\`\`\`') === false &&
+               text.endsWith('.') === false && text.length > 100;
     }
 
     async function sleep(ms) {
@@ -1251,9 +1378,7 @@
                         signal: signal || controller.signal
                     });
                     clearTimeout(timeoutId);
-                    if (res.ok) {
-                        return await res.json();
-                    }
+                    if (res.ok) return await res.json();
                     if (res.status === 429) {
                         await sleep(backoff);
                         backoff *= 2;
@@ -1277,19 +1402,13 @@
         const temperature = calculateTemperature(messages);
         let fullText = '';
         let currentMessages = [...messages];
-
         for (let i = 0; i < MAX_CONTINUES; i++) {
             if (signal?.aborted) throw new Error('Request cancelled');
             const data = await singleCall(currentMessages, maxTokens, temperature, signal);
             const content = data?.choices?.[0]?.message?.content || '';
             fullText += content;
             if (!looksCutOff(content)) {
-                return {
-                    ...data,
-                    choices: [{
-                        message: { content: fullText }
-                    }]
-                };
+                return { ...data, choices: [{ message: { content: fullText } }] };
             }
             currentMessages.push({ role: 'assistant', content });
             currentMessages.push({ role: 'user', content: 'continue exactly from where you stopped' });
@@ -1298,49 +1417,28 @@
     }
 
     // ===================== APP =====================
-
     const App = {
         state: {
-            chats: [],
-            currentChatId: null,
-            mode: 'chat',
-            settings: {},
-            isTyping: false,
-            sidebarOpen: window.innerWidth > 768,
-            currentFile: null,
-            currentFileContent: null,
-            notifMuted: false,
-            lastNotifHash: null,
-            abortController: null,
-            renameChatId: null
+            chats: [], currentChatId: null, mode: 'chat', settings: {},
+            isTyping: false, sidebarOpen: window.innerWidth > 768,
+            currentFile: null, currentFileContent: null,
+            notifMuted: false, lastNotifHash: null,
+            abortController: null, renameChatId: null,
+            panelFile: null, editMsgIndex: null
         },
 
         config: {
             maxMessages: 20,
             modes: {
                 chat: {
-                    name: 'Dechris Flash',
-                    icon: 'fa-bolt',
-                    color: '#3b82f6',
+                    name: 'Dechris Flash', icon: 'fa-bolt', color: '#3b82f6',
                     placeholder: 'Message Dechris AI...',
-                    desc: 'Fast, general-purpose chat',
-                    responseKey: 'reply'
+                    desc: 'Fast, general-purpose chat'
                 },
                 agent: {
-                    name: 'DeepThink',
-                    icon: 'fa-brain',
-                    color: '#a855f7',
+                    name: 'DeepThink', icon: 'fa-brain', color: '#a855f7',
                     placeholder: 'Ask DeepThink to code, plan, or reason...',
-                    desc: 'Multi-step reasoning & coding',
-                    responseKey: 'result'
-                },
-                analyze: {
-                    name: 'Analyze',
-                    icon: 'fa-microscope',
-                    color: '#10b981',
-                    placeholder: 'Upload a file or paste text to analyze...',
-                    desc: 'File & text analysis',
-                    responseKey: 'result'
+                    desc: 'Multi-step reasoning & coding'
                 }
             }
         },
@@ -1358,14 +1456,11 @@
             };
             marked.setOptions({ renderer });
 
-            if (!this.state.settings.name) {
-                setTimeout(() => this.openSetup(), 800);
-            }
+            if (!this.state.settings.name) setTimeout(() => this.openSetup(), 800);
             if (this.state.chats.length === 0) {
                 this.createNewChat(false);
             } else {
-                const lastChat = this.state.chats[0];
-                this.switchChat(lastChat.id, false);
+                this.switchChat(this.state.chats[0].id, false);
             }
 
             this.requestBrowserNotif();
@@ -1383,27 +1478,90 @@
 
             this.updateSidebar();
             window.addEventListener('resize', () => this.updateSidebar());
+            setTimeout(() => { const input = document.getElementById('userInput'); if (input) input.focus(); }, 1600);
 
-            setTimeout(() => {
-                const input = document.getElementById('userInput');
-                if (input) input.focus();
-            }, 1600);
-
+            // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
-                    this.closeSettings();
-                    this.closeFileViewer();
-                    this.closeRenameModal();
+                    this.closeSettings(); this.closeFileViewer(); this.closeRenameModal(); this.closeSidePanel();
                 }
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'k') { e.preventDefault(); this.createNewChat(); }
+                    if (e.key === '/') { e.preventDefault(); document.getElementById('userInput')?.focus(); }
+                    if (e.key === 'b') { e.preventDefault(); this.toggleSidebar(); }
+                }
+            });
+
+            // Drag & drop
+            this.initDragDrop();
+
+            // Mobile keyboard fix
+            this.initKeyboardFix();
+
+            // Auto-save draft
+            this.initAutoSave();
+        },
+
+        initKeyboardFix() {
+            if (!window.visualViewport) return;
+            const vv = window.visualViewport;
+            const update = () => {
+                const h = vv.height;
+                document.documentElement.style.setProperty('--vv-h', h + 'px');
+                document.body.style.height = h + 'px';
+            };
+            vv.addEventListener('resize', update);
+            vv.addEventListener('scroll', update);
+        },
+
+        initDragDrop() {
+            const overlay = document.getElementById('dragOverlay');
+            let dragCounter = 0;
+            document.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                dragCounter++;
+                if (overlay) overlay.classList.add('active');
+            });
+            document.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dragCounter--;
+                if (dragCounter === 0 && overlay) overlay.classList.remove('active');
+            });
+            document.addEventListener('dragover', (e) => e.preventDefault());
+            document.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dragCounter = 0;
+                if (overlay) overlay.classList.remove('active');
+                const files = e.dataTransfer.files;
+                if (files.length) this.handleFileSelect({ files: [files[0]] });
             });
         },
 
+        initAutoSave() {
+            setInterval(() => {
+                const input = document.getElementById('userInput');
+                if (input && input.value.trim()) {
+                    localStorage.setItem('dechris_draft_' + this.state.currentChatId, input.value);
+                }
+            }, 2000);
+        },
+
+        restoreDraft() {
+            const input = document.getElementById('userInput');
+            if (!input) return;
+            const draft = localStorage.getItem('dechris_draft_' + this.state.currentChatId);
+            if (draft) {
+                input.value = draft;
+                this.autoResize(input);
+            }
+        },
+
         // ===================== TOAST =====================
-        toast(message, type = 'info') {
+        toast(message, type) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
             const el = document.createElement('div');
-            el.className = `toast ${type}`;
+            el.className = `toast ${type || 'info'}`;
             el.textContent = message;
             container.appendChild(el);
             setTimeout(() => el.remove(), 3000);
@@ -1415,7 +1573,6 @@
                 Notification.requestPermission();
             }
         },
-
         sendBrowserNotif(title, body) {
             if (!this.state.settings || this.state.settings.notifications === false) return;
             if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
@@ -1424,7 +1581,6 @@
                 } catch (e) {}
             }
         },
-
         async checkNotif() {
             try {
                 const resp = await fetch('notif.txt', { cache: 'no-store', signal: AbortSignal.timeout(5000) });
@@ -1444,7 +1600,6 @@
                 this.updateMsgCount();
             } catch (e) {}
         },
-
         simpleHash(str) {
             let h = 0;
             for (let i = 0; i < str.length; i++) {
@@ -1453,7 +1608,6 @@
             }
             return h;
         },
-
         ackNotif(hash) {
             localStorage.setItem('dechris_notif_ack', String(hash));
             const chat = this.getCurrentChat();
@@ -1476,7 +1630,6 @@
             }
             this.updateUserUI();
         },
-
         saveSettings() {
             const nameEl = document.getElementById('settingsName');
             const notifEl = document.getElementById('notifToggle');
@@ -1488,7 +1641,6 @@
             this.closeSettings();
             this.toast('Settings saved', 'success');
         },
-
         updateUserUI() {
             const name = this.state.settings.name || 'Agent';
             const avatar = document.getElementById('userAvatar');
@@ -1502,13 +1654,11 @@
             const notifToggle = document.getElementById('notifToggle');
             if (notifToggle) notifToggle.checked = this.state.settings.notifications !== false;
         },
-
         openSetup() {
             const modal = document.getElementById('setupModal');
             if (modal) modal.classList.add('active');
             setTimeout(() => { const el = document.getElementById('setupName'); if (el) el.focus(); }, 300);
         },
-
         completeSetup() {
             const el = document.getElementById('setupName');
             const name = el ? el.value.trim() : '';
@@ -1520,18 +1670,15 @@
             const modal = document.getElementById('setupModal');
             if (modal) modal.classList.remove('active');
         },
-
         openSettings() {
             const modal = document.getElementById('settingsModal');
             if (modal) modal.classList.add('active');
             this.toggleSidebar(false);
         },
-
         closeSettings() {
             const modal = document.getElementById('settingsModal');
             if (modal) modal.classList.remove('active');
         },
-
         clearAllData() {
             if (!confirm('WARNING: This will permanently delete ALL chats and settings. Continue?')) return;
             localStorage.removeItem('dechris_chats');
@@ -1553,29 +1700,23 @@
             if (!Array.isArray(this.state.chats)) this.state.chats = [];
             this.renderChatList();
         },
-
         saveChats() {
             try {
                 localStorage.setItem('dechris_chats', JSON.stringify(this.state.chats));
             } catch (e) {}
             this.renderChatList();
         },
-
-        createNewChat(focus = true) {
+        createNewChat(focus) {
             const chat = {
                 id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                title: 'New Mission',
-                mode: this.state.mode,
-                messages: [],
-                createdAt: Date.now(),
-                updatedAt: Date.now()
+                title: 'New Mission', mode: this.state.mode, messages: [],
+                createdAt: Date.now(), updatedAt: Date.now()
             };
             this.state.chats.unshift(chat);
             this.saveChats();
-            this.switchChat(chat.id, focus);
+            this.switchChat(chat.id, focus !== false);
         },
-
-        switchChat(id, focus = true) {
+        switchChat(id, focus) {
             this.state.currentChatId = id;
             const chat = this.state.chats.find(c => c.id === id);
             if (!chat) return;
@@ -1593,26 +1734,22 @@
             }
             this.updateMsgCount();
             this.renderChatList();
-            if (focus) {
+            this.restoreDraft();
+            if (focus !== false) {
                 setTimeout(() => { const input = document.getElementById('userInput'); if (input) input.focus(); }, 100);
             }
         },
-
         deleteChat(id, event) {
             if (event) event.stopPropagation();
             if (!confirm('Delete this mission?')) return;
             this.state.chats = this.state.chats.filter(c => c.id !== id);
             this.saveChats();
             if (this.state.currentChatId === id) {
-                if (this.state.chats.length > 0) {
-                    this.switchChat(this.state.chats[0].id);
-                } else {
-                    this.createNewChat();
-                }
+                if (this.state.chats.length > 0) this.switchChat(this.state.chats[0].id);
+                else this.createNewChat();
             }
             this.toast('Mission deleted', 'success');
         },
-
         openRenameModal(id, event) {
             if (event) event.stopPropagation();
             this.state.renameChatId = id;
@@ -1623,62 +1760,40 @@
             if (modal) modal.classList.add('active');
             setTimeout(() => { if (input) input.focus(); }, 300);
         },
-
         closeRenameModal() {
             this.state.renameChatId = null;
             const modal = document.getElementById('renameModal');
             if (modal) modal.classList.remove('active');
         },
-
         confirmRename() {
             const input = document.getElementById('renameInput');
             const name = input ? input.value.trim() : '';
             if (!name || !this.state.renameChatId) return;
             const chat = this.state.chats.find(c => c.id === this.state.renameChatId);
-            if (chat) {
-                chat.title = name;
-                chat.updatedAt = Date.now();
-                this.saveChats();
-                this.toast('Mission renamed', 'success');
-            }
+            if (chat) { chat.title = name; chat.updatedAt = Date.now(); this.saveChats(); this.toast('Mission renamed', 'success'); }
             this.closeRenameModal();
         },
-
         exportChatAsTxt(id) {
             const chat = this.state.chats.find(c => c.id === id);
             if (!chat) return;
-            let content = `Dechris AI - Mission Export\n`;
-            content += `Title: ${chat.title}\n`;
-            content += `Mode: ${chat.mode}\n`;
-            content += `Date: ${new Date(chat.createdAt).toLocaleString()}\n`;
-            content += `================================\n\n`;
+            let content = `Dechris AI - Mission Export\nTitle: ${chat.title}\nMode: ${chat.mode}\nDate: ${new Date(chat.createdAt).toLocaleString()}\n================================\n\n`;
             for (const msg of chat.messages) {
                 const role = msg.role === 'user' ? (this.state.settings.name || 'User') : 'Dechris AI';
-                content += `[${role}] ${new Date(msg.timestamp).toLocaleString()}\n`;
-                content += `${msg.content}\n\n`;
+                content += `[${role}] ${new Date(msg.timestamp).toLocaleString()}\n${msg.content}\n\n`;
             }
             const blob = new Blob([content], { type: 'text/plain' });
             const filename = `dechris_${sanitizeFileName(chat.title).replace(/\.txt$/, '')}_${Date.now()}.txt`;
             saveAs(blob, filename);
             this.toast('Mission exported', 'success');
         },
-
         async exportAllChats() {
-            if (!window.JSZip) {
-                this.toast('ZIP library not loaded', 'error');
-                return;
-            }
+            if (!window.JSZip) { this.toast('ZIP library not loaded', 'error'); return; }
             const zip = new JSZip();
             for (const chat of this.state.chats) {
-                let content = `Dechris AI - Mission Export\n`;
-                content += `Title: ${chat.title}\n`;
-                content += `Mode: ${chat.mode}\n`;
-                content += `Date: ${new Date(chat.createdAt).toLocaleString()}\n`;
-                content += `================================\n\n`;
+                let content = `Dechris AI - Mission Export\nTitle: ${chat.title}\nMode: ${chat.mode}\nDate: ${new Date(chat.createdAt).toLocaleString()}\n================================\n\n`;
                 for (const msg of chat.messages) {
                     const role = msg.role === 'user' ? (this.state.settings.name || 'User') : 'Dechris AI';
-                    content += `[${role}] ${new Date(msg.timestamp).toLocaleString()}\n`;
-                    content += `${msg.content}\n\n`;
+                    content += `[${role}] ${new Date(msg.timestamp).toLocaleString()}\n${msg.content}\n\n`;
                 }
                 const filename = `${sanitizeFileName(chat.title).replace(/\.txt$/, '')}_${chat.id.slice(-6)}.txt`;
                 zip.file(filename, content);
@@ -1687,61 +1802,23 @@
             saveAs(blob, `dechris_backup_${Date.now()}.zip`);
             this.toast('All missions exported', 'success');
         },
-
         async handleImportZip(input) {
-            const file = input.files[0];
-            input.value = '';
-            if (!file || !window.JSZip) {
-                this.toast('ZIP library not loaded', 'error');
-                return;
-            }
+            const file = input.files[0]; input.value = '';
+            if (!file || !window.JSZip) { this.toast('ZIP library not loaded', 'error'); return; }
             try {
                 const zip = await JSZip.loadAsync(file);
                 let imported = 0;
                 for (const [filename, zipEntry] of Object.entries(zip.files)) {
                     if (zipEntry.dir || !filename.endsWith('.txt')) continue;
                     const text = await zipEntry.async('string');
-                    const lines = text.split('\n');
-                    let title = 'Imported Mission';
-                    let mode = 'chat';
-                    const messages = [];
-                    let currentRole = null;
-                    let currentContent = [];
-                    let currentTimestamp = Date.now();
-                    for (const line of lines) {
-                        if (line.startsWith('Title: ')) title = line.slice(7).trim();
-                        else if (line.startsWith('Mode: ')) mode = line.slice(6).trim();
-                        else if (line.match(/^\[.+?\] .+$/)) {
-                            if (currentRole) {
-                                messages.push({
-                                    role: currentRole,
-                                    content: currentContent.join('\n').trim(),
-                                    timestamp: currentTimestamp
-                                });
-                            }
-                            const roleMatch = line.match(/^\[(.+?)\] (.+)$/);
-                            currentRole = roleMatch[1] === (this.state.settings.name || 'User') ? 'user' : 'assistant';
-                            currentTimestamp = new Date(roleMatch[2]).getTime() || Date.now();
-                            currentContent = [];
-                        } else if (line !== '================================' && line !== 'Dechris AI - Mission Export') {
-                            currentContent.push(line);
-                        }
-                    }
-                    if (currentRole) {
-                        messages.push({
-                            role: currentRole,
-                            content: currentContent.join('\n').trim(),
-                            timestamp: currentTimestamp
-                        });
-                    }
-                    if (messages.length > 0) {
+                    const result = this.parseChatExport(text);
+                    if (result.messages.length > 0) {
                         this.state.chats.push({
                             id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + imported,
-                            title: title || 'Imported Mission',
-                            mode: ['chat', 'agent', 'analyze'].includes(mode) ? mode : 'chat',
-                            messages,
-                            createdAt: Date.now(),
-                            updatedAt: Date.now()
+                            title: result.title || 'Imported Mission',
+                            mode: ['chat', 'agent'].includes(result.mode) ? result.mode : 'chat',
+                            messages: result.messages,
+                            createdAt: Date.now(), updatedAt: Date.now()
                         });
                         imported++;
                     }
@@ -1753,59 +1830,21 @@
                 } else {
                     this.toast('No valid missions found in ZIP', 'error');
                 }
-            } catch (e) {
-                this.toast('Failed to restore ZIP', 'error');
-            }
+            } catch (e) { this.toast('Failed to restore ZIP', 'error'); }
         },
-
         handleImportTxt(input) {
-            const file = input.files[0];
-            input.value = '';
+            const file = input.files[0]; input.value = '';
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
-                const text = e.target.result;
-                const lines = text.split('\n');
-                let title = file.name.replace(/\.txt$/, '');
-                let mode = 'chat';
-                const messages = [];
-                let currentRole = null;
-                let currentContent = [];
-                let currentTimestamp = Date.now();
-                for (const line of lines) {
-                    if (line.startsWith('Title: ')) title = line.slice(7).trim();
-                    else if (line.startsWith('Mode: ')) mode = line.slice(6).trim();
-                    else if (line.match(/^\[.+?\] .+$/)) {
-                        if (currentRole) {
-                            messages.push({
-                                role: currentRole,
-                                content: currentContent.join('\n').trim(),
-                                timestamp: currentTimestamp
-                            });
-                        }
-                        const roleMatch = line.match(/^\[(.+?)\] (.+)$/);
-                        currentRole = roleMatch[1] === (this.state.settings.name || 'User') ? 'user' : 'assistant';
-                        currentTimestamp = new Date(roleMatch[2]).getTime() || Date.now();
-                        currentContent = [];
-                    } else if (line !== '================================' && line !== 'Dechris AI - Mission Export') {
-                        currentContent.push(line);
-                    }
-                }
-                if (currentRole) {
-                    messages.push({
-                        role: currentRole,
-                        content: currentContent.join('\n').trim(),
-                        timestamp: currentTimestamp
-                    });
-                }
-                if (messages.length > 0) {
+                const result = this.parseChatExport(e.target.result);
+                if (result.messages.length > 0) {
                     const chat = {
                         id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                        title: title || 'Imported Mission',
-                        mode: ['chat', 'agent', 'analyze'].includes(mode) ? mode : 'chat',
-                        messages,
-                        createdAt: Date.now(),
-                        updatedAt: Date.now()
+                        title: result.title || file.name.replace(/\.txt$/, ''),
+                        mode: ['chat', 'agent'].includes(result.mode) ? result.mode : 'chat',
+                        messages: result.messages,
+                        createdAt: Date.now(), updatedAt: Date.now()
                     };
                     this.state.chats.unshift(chat);
                     this.saveChats();
@@ -1817,7 +1856,29 @@
             };
             reader.readAsText(file);
         },
-
+        parseChatExport(text) {
+            const lines = text.split('\n');
+            let title = 'Imported Mission', mode = 'chat';
+            const messages = [];
+            let currentRole = null, currentContent = [], currentTimestamp = Date.now();
+            for (const line of lines) {
+                if (line.startsWith('Title: ')) title = line.slice(7).trim();
+                else if (line.startsWith('Mode: ')) mode = line.slice(6).trim();
+                else if (line.match(/^\[.+?\] .+$/)) {
+                    if (currentRole) {
+                        messages.push({ role: currentRole, content: currentContent.join('\n').trim(), timestamp: currentTimestamp });
+                    }
+                    const roleMatch = line.match(/^\[(.+?)\] (.+)$/);
+                    currentRole = roleMatch[1] === (this.state.settings.name || 'User') ? 'user' : 'assistant';
+                    currentTimestamp = new Date(roleMatch[2]).getTime() || Date.now();
+                    currentContent = [];
+                } else if (line !== '================================' && line !== 'Dechris AI - Mission Export') {
+                    currentContent.push(line);
+                }
+            }
+            if (currentRole) messages.push({ role: currentRole, content: currentContent.join('\n').trim(), timestamp: currentTimestamp });
+            return { title, mode, messages };
+        },
         renderChatList() {
             const list = document.getElementById('chatList');
             if (!list) return;
@@ -1846,38 +1907,25 @@
                         </div>
                     </div>
                     <div class="chat-item-actions">
-                        <button class="chat-item-action rename" onclick="App.exportChatAsTxt('${chat.id}', event)" title="Export TXT">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="chat-item-action rename" onclick="App.openRenameModal('${chat.id}', event)" title="Rename">
-                            <i class="fas fa-pen"></i>
-                        </button>
-                        <button class="chat-item-action delete" onclick="App.deleteChat('${chat.id}', event)" title="Delete">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+                        <button class="chat-item-action rename" onclick="App.exportChatAsTxt('${chat.id}', event)" title="Export TXT"><i class="fas fa-download"></i></button>
+                        <button class="chat-item-action rename" onclick="App.openRenameModal('${chat.id}', event)" title="Rename"><i class="fas fa-pen"></i></button>
+                        <button class="chat-item-action delete" onclick="App.deleteChat('${chat.id}', event)" title="Delete"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 </div>`;
             }).join('');
         },
-
         cycleMode() {
-            const modes = ['chat', 'agent', 'analyze'];
+            const modes = ['chat', 'agent'];
             const idx = modes.indexOf(this.state.mode);
             const next = modes[(idx + 1) % modes.length];
             this.setMode(next);
         },
-
         setMode(mode) {
             this.state.mode = mode;
             const chat = this.getCurrentChat();
-            if (chat) {
-                chat.mode = mode;
-                chat.updatedAt = Date.now();
-                this.saveChats();
-            }
+            if (chat) { chat.mode = mode; chat.updatedAt = Date.now(); this.saveChats(); }
             this.updateModeUI();
         },
-
         updateModeUI() {
             const cfg = this.config.modes[this.state.mode];
             const selector = document.getElementById('modelSelector');
@@ -1892,17 +1940,14 @@
             if (deepBtn) {
                 deepBtn.className = 'icon-btn';
                 if (this.state.mode === 'agent') deepBtn.classList.add('agent-active');
-                else if (this.state.mode === 'analyze') deepBtn.classList.add('analyze-active');
                 else deepBtn.classList.add('active');
             }
             if (inputWrapper) {
                 inputWrapper.className = 'input-wrapper';
                 if (this.state.mode === 'agent') inputWrapper.classList.add('agent-mode');
-                else if (this.state.mode === 'analyze') inputWrapper.classList.add('analyze-mode');
             }
             if (input) input.placeholder = cfg.placeholder;
         },
-
         getCurrentChat() {
             return this.state.chats.find(c => c.id === this.state.currentChatId);
         },
@@ -1917,9 +1962,7 @@
             }
             container.innerHTML = messages.map((msg, idx) => this.buildMessageHTML(msg, idx)).join('');
             requestAnimationFrame(() => {
-                container.querySelectorAll('pre code').forEach(block => {
-                    Prism.highlightElement(block);
-                });
+                container.querySelectorAll('pre code').forEach(block => Prism.highlightElement(block));
             });
             this.scrollToBottom();
         },
@@ -1929,10 +1972,7 @@
                 return `<div class="message system">
                     <div class="message-avatar"><i class="fas fa-broadcast-tower"></i></div>
                     <div class="message-content">
-                        <div class="system-broadcast-header">
-                            <i class="fas fa-bell"></i>
-                            <span>System Broadcast</span>
-                        </div>
+                        <div class="system-broadcast-header"><i class="fas fa-bell"></i><span>System Broadcast</span></div>
                         ${this.escapeHtml(msg.content).replace(/\n/g, '<br>')}
                         <button class="ack-btn" onclick="App.ackNotif(${msg.notifHash || 0})">Acknowledge</button>
                     </div>
@@ -1944,6 +1984,9 @@
                 : `<div class="message-avatar"><i class="fas fa-robot"></i></div>`;
             let content = '';
             let fileAttachment = '';
+            let fileCards = '';
+            let msgActions = '';
+
             if (isUser && msg.fileData) {
                 const size = msg.fileData.size ? this.formatFileSize(msg.fileData.size) : '';
                 content = msg.content ? this.escapeHtml(msg.content).replace(/\n/g, '<br>') : '';
@@ -1953,49 +1996,282 @@
                     ${size ? `<span class="file-attachment-size">${size}</span>` : ''}
                     <i class="fas fa-chevron-down" style="font-size:0.7rem;opacity:0.6;"></i>
                 </div>`;
+                msgActions = `<div class="msg-actions">
+                    <button class="msg-action" onclick="App.editMessage(${idx})"><i class="fas fa-pen"></i> Edit</button>
+                    <button class="msg-action" onclick="App.copyMessageContent(${idx})"><i class="fas fa-copy"></i> Copy</button>
+                </div>`;
             } else if (!isUser) {
-                content = marked.parse(msg.content || '');
+                // Show text content (with file blocks stripped if files exist)
+                let displayContent = msg.content || '';
+                if (msg.files && msg.files.length) {
+                    displayContent = stripFileBlocks(displayContent);
+                }
+                content = marked.parse(displayContent || 'Generated files:');
+
+                // File cards for AI-generated files
+                if (msg.files && msg.files.length) {
+                    fileCards = `<div class="file-cards-grid">` + msg.files.map((f, fidx) => {
+                        const ext = f.name.split('.').pop().toLowerCase();
+                        const iconMap = {
+                            html: 'fa-html5', css: 'fa-css3', js: 'fa-js',
+                            py: 'fa-python', json: 'fa-file-code', md: 'fa-markdown',
+                            pdf: 'fa-file-pdf', txt: 'fa-file-alt', sql: 'fa-database',
+                            yaml: 'fa-file-code', yml: 'fa-file-code', jsx: 'fa-react',
+                            tsx: 'fa-react', ts: 'fa-file-code'
+                        };
+                        const iconClass = iconMap[ext] || 'fa-file';
+                        return `<div class="file-card" onclick="App.openSidePanel(${idx}, ${fidx})">
+                            <div class="file-card-icon ${ext}"><i class="fab ${iconClass}"></i></div>
+                            <div class="file-card-info">
+                                <div class="file-card-name">${this.escapeHtml(f.name)}</div>
+                                <div class="file-card-meta">${ext.toUpperCase()} &bull; ${this.formatFileSize(f.content.length)}</div>
+                            </div>
+                        </div>`;
+                    }).join('') + `</div>`;
+                }
+
+                msgActions = `<div class="msg-actions">
+                    <button class="msg-action" onclick="App.copyMessageContent(${idx})"><i class="fas fa-copy"></i> Copy</button>
+                    <button class="msg-action" onclick="App.exportMessageAsTxt(${idx})"><i class="fas fa-file-alt"></i> TXT</button>
+                    <button class="msg-action" onclick="App.exportMessageAsPDF(${idx})"><i class="fas fa-file-pdf"></i> PDF</button>
+                    ${idx === this.getCurrentChat().messages.length - 1 && msg.role === 'assistant' ?
+                        `<button class="msg-action" onclick="App.regenerateMessage(${idx})"><i class="fas fa-redo"></i> Regen</button>` : ''}
+                </div>`;
             } else {
                 content = this.escapeHtml(msg.content || '').replace(/\n/g, '<br>');
+                msgActions = `<div class="msg-actions">
+                    <button class="msg-action" onclick="App.editMessage(${idx})"><i class="fas fa-pen"></i> Edit</button>
+                    <button class="msg-action" onclick="App.copyMessageContent(${idx})"><i class="fas fa-copy"></i> Copy</button>
+                </div>`;
             }
+
             const modeBadge = !isUser && msg.mode ?
                 `<span class="mode-badge ${msg.mode}">${this.config.modes[msg.mode]?.name || msg.mode}</span>` : '';
-            return `<div class="message ${isUser ? 'user' : 'assistant'}">
+
+            return `<div class="message ${isUser ? 'user' : 'assistant'}" id="msg-${idx}">
                 ${avatar}
-                <div class="message-content">${content}${fileAttachment}${modeBadge}</div>
-            </div>`;
+                <div class="message-content">${content}${fileAttachment}${modeBadge}${fileCards}</div>
+            </div>${msgActions}`;
         },
 
         formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            if (typeof bytes === 'number') {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            }
+            return (bytes?.length || 0) + ' chars';
+        },
+
+        // ===================== SIDE PANEL (KIMI-STYLE) =====================
+        openSidePanel(msgIdx, fileIdx) {
+            const chat = this.getCurrentChat();
+            if (!chat || !chat.messages[msgIdx] || !chat.messages[msgIdx].files) return;
+            const file = chat.messages[msgIdx].files[fileIdx];
+            if (!file) return;
+            this.state.panelFile = file;
+
+            const panel = document.getElementById('sidePanel');
+            const overlay = document.getElementById('sidePanelOverlay');
+            const nameEl = document.getElementById('sidePanelFileName');
+            const langEl = document.getElementById('sidePanelLang');
+            const iconEl = document.getElementById('sidePanelIcon');
+            const codeBlock = document.getElementById('panelCodeBlock');
+            const previewFrame = document.getElementById('panelPreviewFrame');
+            const tabCode = document.getElementById('tabCode');
+            const tabPreview = document.getElementById('tabPreview');
+
+            if (nameEl) nameEl.textContent = file.name;
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (langEl) langEl.textContent = ext;
+
+            const iconMap = { html: 'fa-html5', css: 'fa-css3', js: 'fa-js', py: 'fa-python' };
+            if (iconEl) iconEl.className = 'fab ' + (iconMap[ext] || 'fa-file-code');
+
+            if (codeBlock) {
+                codeBlock.textContent = file.content;
+                codeBlock.className = 'language-' + (Prism.languages[ext] ? ext : 'text');
+                requestAnimationFrame(() => Prism.highlightElement(codeBlock));
+            }
+
+            // Preview for web files
+            const previewable = ['html', 'htm', 'css', 'js'].includes(ext);
+            if (tabPreview) tabPreview.style.display = previewable ? 'block' : 'none';
+            if (previewFrame && previewable) {
+                let previewContent = file.content;
+                if (ext === 'css') {
+                    previewContent = `<!DOCTYPE html><html><head><style>${file.content}</style></head><body><div style="padding:20px"><h1>CSS Preview</h1><p>Add HTML elements to see styles</p></div></body></html>`;
+                } else if (ext === 'js') {
+                    previewContent = `<!DOCTYPE html><html><head></head><body><div style="padding:20px"><h1>JS Preview</h1><p>Check console for output</p></div><script>${file.content}</script></body></html>`;
+                }
+                const blob = new Blob([previewContent], { type: 'text/html' });
+                previewFrame.src = URL.createObjectURL(blob);
+            }
+
+            this.switchPanelTab('code');
+            if (panel) panel.classList.add('open');
+            if (overlay) overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        },
+
+        closeSidePanel() {
+            const panel = document.getElementById('sidePanel');
+            const overlay = document.getElementById('sidePanelOverlay');
+            if (panel) panel.classList.remove('open');
+            if (overlay) overlay.classList.remove('active');
+            document.body.style.overflow = '';
+            this.state.panelFile = null;
+        },
+
+        switchPanelTab(tab) {
+            const codeView = document.getElementById('panelCodeView');
+            const previewView = document.getElementById('panelPreviewView');
+            const tabCode = document.getElementById('tabCode');
+            const tabPreview = document.getElementById('tabPreview');
+            if (tab === 'code') {
+                if (codeView) codeView.classList.add('active');
+                if (previewView) previewView.classList.remove('active');
+                if (tabCode) tabCode.classList.add('active');
+                if (tabPreview) tabPreview.classList.remove('active');
+            } else {
+                if (codeView) codeView.classList.remove('active');
+                if (previewView) previewView.classList.add('active');
+                if (tabCode) tabCode.classList.remove('active');
+                if (tabPreview) tabPreview.classList.add('active');
+            }
+        },
+
+        copyPanelContent() {
+            if (!this.state.panelFile) return;
+            navigator.clipboard.writeText(this.state.panelFile.content).then(() => {
+                this.toast('Copied to clipboard', 'success');
+            });
+        },
+
+        downloadPanelFile() {
+            if (!this.state.panelFile) return;
+            const blob = new Blob([this.state.panelFile.content], { type: 'text/plain' });
+            saveAs(blob, this.state.panelFile.name);
+            this.toast('File downloaded', 'success');
+        },
+
+        // ===================== MESSAGE ACTIONS =====================
+        copyMessageContent(idx) {
+            const chat = this.getCurrentChat();
+            if (!chat || !chat.messages[idx]) return;
+            const content = chat.messages[idx].content || '';
+            navigator.clipboard.writeText(content).then(() => this.toast('Copied', 'success'));
+        },
+
+        editMessage(idx) {
+            const chat = this.getCurrentChat();
+            if (!chat || !chat.messages[idx] || chat.messages[idx].role !== 'user') return;
+            const msg = chat.messages[idx];
+            const input = document.getElementById('userInput');
+            if (input) {
+                input.value = msg.content || '';
+                this.autoResize(input);
+                input.focus();
+            }
+            // Remove this message and all after it
+            chat.messages = chat.messages.slice(0, idx);
+            chat.updatedAt = Date.now();
+            this.saveChats();
+            this.renderMessages(chat.messages);
+            this.updateMsgCount();
+            this.toast('Message loaded for editing', 'info');
+        },
+
+        regenerateMessage(idx) {
+            const chat = this.getCurrentChat();
+            if (!chat || idx !== chat.messages.length - 1) return;
+            // Remove the assistant message
+            chat.messages = chat.messages.slice(0, idx);
+            chat.updatedAt = Date.now();
+            this.saveChats();
+            this.renderMessages(chat.messages);
+            this.updateMsgCount();
+            // Resend
+            this.sendMessage(true);
+        },
+
+        exportMessageAsTxt(idx) {
+            const chat = this.getCurrentChat();
+            if (!chat || !chat.messages[idx]) return;
+            const msg = chat.messages[idx];
+            const blob = new Blob([msg.content || ''], { type: 'text/plain' });
+            saveAs(blob, `message_${idx + 1}.txt`);
+            this.toast('Exported as TXT', 'success');
+        },
+
+        async exportMessageAsPDF(idx) {
+            const chat = this.getCurrentChat();
+            if (!chat || !chat.messages[idx]) return;
+            const msg = chat.messages[idx];
+            if (!msg.content) return;
+
+            // Create a hidden container for PDF rendering
+            let container = document.getElementById('pdfExportContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'pdfExportContainer';
+                container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fff;color:#000;padding:40px;font-family:Inter,sans-serif;line-height:1.6;';
+                document.body.appendChild(container);
+            }
+
+            const isUser = msg.role === 'user';
+            const roleLabel = isUser ? (this.state.settings.name || 'User') : 'Dechris AI';
+            const htmlContent = `
+                <div style="max-width:700px;margin:0 auto;">
+                    <h1 style="font-size:24px;margin-bottom:8px;color:#1a1a2e;">${roleLabel}</h1>
+                    <p style="font-size:12px;color:#666;margin-bottom:24px;">${new Date(msg.timestamp).toLocaleString()}</p>
+                    <div style="font-size:14px;color:#333;">${marked.parse(msg.content || '')}</div>
+                </div>
+            `;
+            container.innerHTML = htmlContent;
+
+            const opt = {
+                margin: [15, 15],
+                filename: `dechris_message_${idx + 1}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                await html2pdf().set(opt).from(container).save();
+                this.toast('Exported as PDF', 'success');
+            } catch (e) {
+                this.toast('PDF export failed', 'error');
+            }
         },
 
         openFileViewer(msgIndex) {
             const chat = this.getCurrentChat();
             if (!chat || !chat.messages[msgIndex] || !chat.messages[msgIndex].fileData) return;
             const fileData = chat.messages[msgIndex].fileData;
-            const overlay = document.getElementById('fileViewerOverlay');
-            const nameEl = document.getElementById('fileViewerName');
-            const contentEl = document.getElementById('fileViewerContent');
+            this.state.panelFile = { name: fileData.name, content: fileData.content };
+            const panel = document.getElementById('sidePanel');
+            const overlay = document.getElementById('sidePanelOverlay');
+            const nameEl = document.getElementById('sidePanelFileName');
+            const langEl = document.getElementById('sidePanelLang');
+            const codeBlock = document.getElementById('panelCodeBlock');
             if (nameEl) nameEl.textContent = fileData.name;
-            if (contentEl) {
-                const codeEl = contentEl.querySelector('code');
-                if (codeEl) codeEl.textContent = fileData.content || 'No content available';
+            const ext = fileData.ext || 'txt';
+            if (langEl) langEl.textContent = ext;
+            if (codeBlock) {
+                codeBlock.textContent = fileData.content || 'No content';
+                codeBlock.className = 'language-' + (Prism.languages[ext] ? ext : 'text');
+                requestAnimationFrame(() => Prism.highlightElement(codeBlock));
             }
+            this.switchPanelTab('code');
+            if (panel) panel.classList.add('open');
             if (overlay) overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
         },
 
-        closeFileViewer() {
-            const overlay = document.getElementById('fileViewerOverlay');
-            if (overlay) overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        },
-
-        // ===================== SEND MESSAGE (BACKEND PORTED) =====================
-        async sendMessage() {
+        // ===================== SEND MESSAGE =====================
+        async sendMessage(isRegen) {
             const input = document.getElementById('userInput');
             const text = input ? input.value.trim() : '';
             const file = this.state.currentFile;
@@ -2006,7 +2282,7 @@
             const chat = this.getCurrentChat();
             if (!chat) {
                 this.createNewChat(false);
-                return this.sendMessage();
+                return this.sendMessage(isRegen);
             }
 
             const welcome = document.getElementById('welcomeScreen');
@@ -2027,11 +2303,8 @@
             }
 
             const userMsg = {
-                role: 'user',
-                content: displayContent,
-                timestamp: Date.now(),
-                fileData: fileData,
-                apiContent: apiContent
+                role: 'user', content: displayContent, timestamp: Date.now(),
+                fileData: fileData, apiContent: apiContent
             };
             chat.messages.push(userMsg);
             chat.updatedAt = Date.now();
@@ -2046,9 +2319,9 @@
             this.updateMsgCount();
 
             if (input) { input.value = ''; input.style.height = 'auto'; }
+            localStorage.removeItem('dechris_draft_' + this.state.currentChatId);
             this.removeFile();
 
-            // Enter loading state
             this.state.isTyping = true;
             this.state.abortController = new AbortController();
             document.body.classList.add('app-loading');
@@ -2060,19 +2333,15 @@
 
                 if (this.state.mode === 'chat') {
                     assistantContent = await this.processChatMode(chat, apiContent);
-                } else if (this.state.mode === 'agent') {
+                } else {
                     const result = await this.processAgentMode(apiContent);
                     assistantContent = result.result;
                     extractedFiles = result.files;
-                } else {
-                    assistantContent = await this.processAnalyzeMode(apiContent);
                 }
 
                 const assistantMsg = {
-                    role: 'assistant',
-                    content: assistantContent,
-                    timestamp: Date.now(),
-                    mode: this.state.mode,
+                    role: 'assistant', content: assistantContent,
+                    timestamp: Date.now(), mode: this.state.mode,
                     files: extractedFiles
                 };
                 chat.messages.push(assistantMsg);
@@ -2096,9 +2365,7 @@
                     const errorMsg = {
                         role: 'assistant',
                         content: `**Connection Error**\n\n${this.escapeHtml(error.message)}\n\nThe server may be unavailable or the request timed out. Please try again later.`,
-                        timestamp: Date.now(),
-                        mode: this.state.mode,
-                        isError: true
+                        timestamp: Date.now(), mode: this.state.mode, isError: true
                     };
                     chat.messages.push(errorMsg);
                     chat.updatedAt = Date.now();
@@ -2121,11 +2388,10 @@
             }
         },
 
-        // ===================== CHAT MODE (PORTED FROM chat.js) =====================
+        // ===================== CHAT MODE =====================
         async processChatMode(chat, apiContent) {
             const recentMessages = chat.messages.slice(-this.config.maxMessages).map(m => ({
-                role: m.role,
-                content: m.apiContent || m.content
+                role: m.role, content: m.apiContent || m.content
             }));
             const lastMsg = recentMessages[recentMessages.length - 1];
             let input = lastMsg ? lastMsg.content : apiContent;
@@ -2172,7 +2438,7 @@
             return finalReply || 'No response from AI.';
         },
 
-        // ===================== AGENT MODE (PORTED FROM agent.js) =====================
+        // ===================== AGENT MODE =====================
         async processAgentMode(apiContent) {
             let input = apiContent;
             if (input.length > 200000) input = input.slice(0, 200000);
@@ -2201,8 +2467,7 @@
             let finalText = results.join('\n\n');
             try {
                 const finalResponse = await callAI([
-                    agentPrompt(),
-                    refinePrompt(),
+                    agentPrompt(), refinePrompt(),
                     { role: 'user', content: finalText }
                 ], this.state.abortController?.signal);
                 const refined = getSafeContent(finalResponse);
@@ -2219,22 +2484,10 @@
             return { result: finalText, files };
         },
 
-        // ===================== ANALYZE MODE (PORTED FROM analyse.js) =====================
-        async processAnalyzeMode(apiContent) {
-            let text = apiContent;
-            if (text.length > 50000) text = text.slice(0, 50000);
-            const response = await callAI([
-                analyzePrompt(),
-                { role: 'user', content: text }
-            ], this.state.abortController?.signal);
-            return getSafeContent(response) || 'No analysis generated.';
-        },
-
         // ===================== TYPING & SCROLL =====================
         showTyping() {
             const container = document.getElementById('messagesList');
             if (!container) return;
-            container.classList.add('typing-active');
             const typingHTML = `<div class="typing-indicator" id="typingIndicator">
                 <div class="message-avatar"><i class="fas fa-robot"></i></div>
                 <div class="typing-bubble">
@@ -2246,14 +2499,10 @@
             container.insertAdjacentHTML('beforeend', typingHTML);
             this.scrollToBottom();
         },
-
         hideTyping() {
             const el = document.getElementById('typingIndicator');
             if (el) el.remove();
-            const container = document.getElementById('messagesList');
-            if (container) container.classList.remove('typing-active');
         },
-
         scrollToBottom() {
             const container = document.getElementById('chatContainer');
             if (!container) return;
@@ -2261,7 +2510,6 @@
                 container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
             });
         },
-
         updateMsgCount() {
             const chat = this.getCurrentChat();
             const count = chat ? chat.messages.length : 0;
@@ -2271,18 +2519,18 @@
 
         // ===================== FILE HANDLING =====================
         async handleFileSelect(input) {
-            const file = input.files[0];
+            const file = input.files ? input.files[0] : (input.files ? null : input);
             if (!file) return;
             const allowed = ['.txt','.json','.html','.css','.js','.md','.py','.jsx','.tsx','.sql','.yaml','.yml','.pdf'];
             const ext = '.' + file.name.split('.').pop().toLowerCase();
             if (!allowed.includes(ext)) {
-                alert('Invalid file type. Please upload: ' + allowed.join(', '));
-                input.value = '';
+                alert('Invalid file type. Allowed: ' + allowed.join(', '));
+                if (input.files) input.value = '';
                 return;
             }
             if (file.size > 5 * 1024 * 1024) {
-                alert('File too large. Maximum size is 5MB.');
-                input.value = '';
+                alert('File too large. Max 5MB.');
+                if (input.files) input.value = '';
                 return;
             }
             try {
@@ -2293,14 +2541,13 @@
                 const preview = document.getElementById('filePreview');
                 if (previewName) previewName.textContent = file.name;
                 if (preview) preview.style.display = 'flex';
-                if (this.state.mode !== 'analyze') this.setMode('analyze');
-                setTimeout(() => this.sendMessage(), 300);
+                const inputEl = document.getElementById('userInput');
+                if (inputEl) { inputEl.focus(); }
             } catch (e) {
-                alert('Could not read the file.');
-                input.value = '';
+                alert('Could not read file.');
+                if (input.files) input.value = '';
             }
         },
-
         removeFile() {
             this.state.currentFile = null;
             this.state.currentFileContent = null;
@@ -2309,7 +2556,6 @@
             if (preview) preview.style.display = 'none';
             if (fileInput) fileInput.value = '';
         },
-
         readFile(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -2327,26 +2573,22 @@
                 textarea.style.height = newHeight + 'px';
             });
         },
-
         handleEnter(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 this.sendMessage();
             }
         },
-
         quickStart(text) {
             const input = document.getElementById('userInput');
             if (input) { input.value = text; this.autoResize(input); }
             this.sendMessage();
         },
-
         toggleSidebar(force) {
             if (typeof force === 'boolean') this.state.sidebarOpen = force;
             else this.state.sidebarOpen = !this.state.sidebarOpen;
             this.updateSidebar();
         },
-
         updateSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
@@ -2363,21 +2605,18 @@
                 if (overlay) overlay.classList.remove('active');
             }
         },
-
         copyCode(btn) {
             const pre = btn.closest('pre');
             if (!pre) return;
             const code = pre.querySelector('code');
             if (!code) return;
-            const text = code.textContent;
-            navigator.clipboard.writeText(text).then(() => {
+            navigator.clipboard.writeText(code.textContent).then(() => {
                 const original = btn.textContent;
                 btn.textContent = 'Copied!';
                 btn.classList.add('copied');
                 setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 2000);
             });
         },
-
         escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
